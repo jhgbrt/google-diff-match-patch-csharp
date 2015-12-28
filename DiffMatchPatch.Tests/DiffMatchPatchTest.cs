@@ -23,12 +23,12 @@ using DiffMatchPatch;
 using System.Collections.Generic;
 using System;
 using System.Text;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace nicTest {
-  [TestFixture()]
+  [TestClass()]
   public class diff_match_patchTest : diff_match_patch {
-    [Test()]
+    [TestMethod]
     public void diff_commonPrefixTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Detect any common suffix.
@@ -42,7 +42,7 @@ namespace nicTest {
       Assert.AreEqual(4, dmp.diff_commonPrefix("1234", "1234xyz"));
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_commonSuffixTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Detect any common suffix.
@@ -56,7 +56,7 @@ namespace nicTest {
       Assert.AreEqual(4, dmp.diff_commonSuffix("1234", "xyz1234"));
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_commonOverlapTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Detect any suffix/prefix overlap.
@@ -78,7 +78,7 @@ namespace nicTest {
       Assert.AreEqual(0, dmp.diff_commonOverlap("fi", "\ufb01i"));
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_halfmatchTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       dmp.Diff_Timeout = 1;
@@ -112,7 +112,7 @@ namespace nicTest {
       Assert.IsNull(dmp.diff_halfMatch("qHilloHelloHew", "xHelloHeHulloy"));
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_linesToCharsTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Convert lines down to characters.
@@ -165,7 +165,7 @@ namespace nicTest {
       CollectionAssert.AreEqual(tmpVector, (List<string>)result[2]);
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_charsToLinesTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Convert chars up to lines.
@@ -202,7 +202,7 @@ namespace nicTest {
           {new Diff(Operation.DELETE, lines)}, diffs);
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_cleanupMergeTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Cleanup a messy diff.
@@ -267,7 +267,7 @@ namespace nicTest {
       CollectionAssert.AreEqual(new List<Diff> {new Diff(Operation.EQUAL, "xca"), new Diff(Operation.DELETE, "cba")}, diffs);
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_cleanupSemanticLosslessTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Slide diffs to match logical boundaries.
@@ -353,7 +353,7 @@ namespace nicTest {
           new Diff(Operation.EQUAL, " The yyy.")}, diffs);
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_cleanupSemanticTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Cleanup semantically trivial equalities.
@@ -484,7 +484,7 @@ namespace nicTest {
           new Diff(Operation.INSERT, "BC")}, diffs);
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_cleanupEfficiencyTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Cleanup operationally trivial equalities.
@@ -561,7 +561,7 @@ namespace nicTest {
       dmp.Diff_EditCost = 4;
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_prettyHtmlTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Pretty print.
@@ -573,7 +573,7 @@ namespace nicTest {
           dmp.diff_prettyHtml(diffs));
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_textTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Compute the source and destination texts.
@@ -590,7 +590,7 @@ namespace nicTest {
       Assert.AreEqual("jumped over a lazy", dmp.diff_text2(diffs));
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_deltaTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Convert a diff into delta string.
@@ -666,7 +666,7 @@ namespace nicTest {
       CollectionAssert.AreEqual(diffs, dmp.diff_fromDelta("", delta), "diff_fromDelta: Unchanged characters.");
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_xIndexTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Translate a location in text1 to text2.
@@ -683,7 +683,7 @@ namespace nicTest {
       Assert.AreEqual(1, dmp.diff_xIndex(diffs, 3), "diff_xIndex: Translation on deletion.");
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_levenshteinTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       List<Diff> diffs = new List<Diff> {
@@ -705,7 +705,7 @@ namespace nicTest {
       Assert.AreEqual(7, dmp.diff_levenshtein(diffs), "diff_levenshtein: Levenshtein with middle equality.");
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_bisectTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Normal.
@@ -722,7 +722,7 @@ namespace nicTest {
       CollectionAssert.AreEqual(diffs, dmp.diff_bisect(a, b, DateTime.MinValue));
     }
 
-    [Test()]
+    [TestMethod]
     public void diff_mainTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Perform a trivial diff.
@@ -806,7 +806,7 @@ namespace nicTest {
       // Test null inputs -- not needed because nulls can't be passed in C#.
     }
 
-    [Test()]
+    [TestMethod]
     public void match_alphabetTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Initialise the bitmasks for Bitap.
@@ -819,7 +819,7 @@ namespace nicTest {
       CollectionAssert.AreEqual(bitmask, dmp.match_alphabet("abcaba"), "match_alphabet: Duplicates.");
     }
 
-    [Test()]
+    [TestMethod]
     public void match_bitapTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
 
@@ -867,7 +867,7 @@ namespace nicTest {
       Assert.AreEqual(0, dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24), "match_bitap: Distance test #3.");
     }
 
-    [Test()]
+    [TestMethod]
     public void match_mainTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Full match.
@@ -890,7 +890,7 @@ namespace nicTest {
       // Test null inputs -- not needed because nulls can't be passed in C#.
     }
 
-    [Test()]
+    [TestMethod]
     public void patch_patchObjTest() {
       // Patch Object.
       Patch p = new Patch();
@@ -910,7 +910,7 @@ namespace nicTest {
       Assert.AreEqual(strp, p.ToString(), "Patch: toString.");
     }
 
-    [Test()]
+    [TestMethod]
     public void patch_fromTextTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       Assert.IsTrue(dmp.patch_fromText("").Count == 0, "patch_fromText: #0.");
@@ -933,7 +933,7 @@ namespace nicTest {
       }
     }
 
-    [Test()]
+    [TestMethod]
     public void patch_toTextTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       string strp = "@@ -21,18 +22,17 @@\n jump\n-s\n+ed\n  over \n-the\n+a\n  laz\n";
@@ -948,7 +948,7 @@ namespace nicTest {
       Assert.AreEqual(strp, result);
     }
 
-    [Test()]
+    [TestMethod]
     public void patch_addContextTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       dmp.Patch_Margin = 4;
@@ -970,7 +970,7 @@ namespace nicTest {
       Assert.AreEqual("@@ -1,27 +1,28 @@\n Th\n-e\n+at\n  quick brown fox jumps. \n", p.ToString(), "patch_addContext: Ambiguity.");
     }
 
-    [Test()]
+    [TestMethod]
     public void patch_makeTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       List<Patch> patches;
@@ -1022,7 +1022,7 @@ namespace nicTest {
       // Test null inputs -- not needed because nulls can't be passed in C#.
     }
 
-    [Test()]
+    [TestMethod]
     public void patch_splitMaxTest() {
       // Assumes that Match_MaxBits is 32.
       diff_match_patchTest dmp = new diff_match_patchTest();
@@ -1046,7 +1046,7 @@ namespace nicTest {
       Assert.AreEqual("@@ -2,32 +2,32 @@\n bcdefghij , h : \n-0\n+1\n  , t : 1 abcdef\n@@ -29,32 +29,32 @@\n bcdefghij , h : \n-0\n+1\n  , t : 1 abcdef\n", dmp.patch_toText(patches));
     }
 
-    [Test()]
+    [TestMethod]
     public void patch_addPaddingTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       List<Patch> patches;
@@ -1078,7 +1078,7 @@ namespace nicTest {
          "patch_addPadding: Both edges none.");
     }
 
-    [Test()]
+    [TestMethod]
     public void patch_applyTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       dmp.Match_Distance = 1000;
