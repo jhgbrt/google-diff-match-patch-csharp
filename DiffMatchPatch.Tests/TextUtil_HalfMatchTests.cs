@@ -1,7 +1,6 @@
-using DiffMatchPatch;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace nicTest
+namespace DiffMatchPatch.Tests
 {
 
     public class TextUtilHalfMatchTests

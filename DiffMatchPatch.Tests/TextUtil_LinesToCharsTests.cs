@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using DiffMatchPatch;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace nicTest
+namespace DiffMatchPatch.Tests
 {
     [TestClass]
-    public class TextUtilLinesToCharsTests
+    public class TextUtil_LinesToCharsTests
     {
         [TestMethod]
         public void LinesToCharsWhenCalledConvertsLinesToChars()

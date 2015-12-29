@@ -52,9 +52,14 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="DiffList_CharsToLinesTests.cs" />
+    <Compile Include="DiffList_CleanupEfficiencyTests.cs" />
+    <Compile Include="DiffList_CleanupMergeTests.cs" />
+    <Compile Include="DiffList_CleanupSemanticLosslessTests.cs" />
+    <Compile Include="DiffList_CleanupSemanticTests.cs" />
     <Compile Include="DiffMatchPatchTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TextUtilLinesToCharsTests.cs" />
+    <Compile Include="TextUtil_LinesToCharsTests.cs" />
     <Compile Include="TextUtil_CommonOverlapTests.cs" />
     <Compile Include="TextUtil_HalfMatchTests.cs" />
   </ItemGroup>

@@ -752,7 +752,7 @@ namespace DiffMatchPatch
          * @param Diffs List of Diff objects.
          * @param lineArray List of unique strings.
          */
-        public static IEnumerable<Diff> CharsToLines(this ICollection<Diff> diffs, List<string> lineArray)
+        public static IEnumerable<Diff> CharsToLines(this ICollection<Diff> diffs, IList<string> lineArray)
         {
             StringBuilder text;
             foreach (var diff in diffs)
