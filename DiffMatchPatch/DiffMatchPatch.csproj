@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DiffMatchPatch</RootNamespace>
     <AssemblyName>DiffMatchPatch</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -41,11 +41,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BitapAlgorithm.cs" />
+    <Compile Include="Constants.cs" />
     <Compile Include="Diff.cs" />
+    <Compile Include="DiffList.cs" />
     <Compile Include="Extensions.cs" />
-    <Compile Include="diff_match_patch.cs" />
+    <Compile Include="HalfMatchResult.cs" />
+    <Compile Include="MatchSettings.cs" />
     <Compile Include="Operation.cs" />
     <Compile Include="Patch.cs" />
+    <Compile Include="PatchList.cs" />
+    <Compile Include="PatchSettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TextUtil.cs" />
   </ItemGroup>

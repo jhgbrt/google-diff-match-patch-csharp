@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Web;
 
 namespace DiffMatchPatch
 {
@@ -12,7 +13,7 @@ namespace DiffMatchPatch
          * @param text2 Second string.
          * @return The number of characters common to the start of each string.
          */
-        public static int CommonPrefix(string text1, string text2)
+        internal static int CommonPrefix(string text1, string text2)
         {
             // Performance analysis: http://neil.fraser.name/news/2007/10/09/
             var n = Math.Min(text1.Length, text2.Length);
@@ -32,13 +33,13 @@ namespace DiffMatchPatch
          * @param text2 Second string.
          * @return The number of characters common to the end of each string.
          */
-        public static int CommonSuffix(string text1, string text2)
+        internal static int CommonSuffix(string text1, string text2)
         {
             // Performance analysis: http://neil.fraser.name/news/2007/10/09/
-            int text1Length = text1.Length;
-            int text2Length = text2.Length;
-            int n = Math.Min(text1.Length, text2.Length);
-            for (int i = 1; i <= n; i++)
+            var text1Length = text1.Length;
+            var text2Length = text2.Length;
+            var n = Math.Min(text1.Length, text2.Length);
+            for (var i = 1; i <= n; i++)
             {
                 if (text1[text1Length - i] != text2[text2Length - i])
                 {
@@ -55,47 +56,47 @@ namespace DiffMatchPatch
          * @return The number of characters common to the end of the first
          *     string and the start of the second string.
          */
-        public static int CommonOverlap(string text1, string text2)
+        internal static int CommonOverlap(string text1, string text2)
         {
             // Cache the text lengths to prevent multiple calls.
-            int text1_length = text1.Length;
-            int text2_length = text2.Length;
+            var text1Length = text1.Length;
+            var text2Length = text2.Length;
             // Eliminate the null case.
-            if (text1_length == 0 || text2_length == 0)
+            if (text1Length == 0 || text2Length == 0)
             {
                 return 0;
             }
             // Truncate the longer string.
-            if (text1_length > text2_length)
+            if (text1Length > text2Length)
             {
-                text1 = text1.Substring(text1_length - text2_length);
+                text1 = text1.Substring(text1Length - text2Length);
             }
-            else if (text1_length < text2_length)
+            else if (text1Length < text2Length)
             {
-                text2 = text2.Substring(0, text1_length);
+                text2 = text2.Substring(0, text1Length);
             }
-            int text_length = Math.Min(text1_length, text2_length);
+            var textLength = Math.Min(text1Length, text2Length);
             // Quick check for the worst case.
             if (text1 == text2)
             {
-                return text_length;
+                return textLength;
             }
 
             // Start by looking for a single character match
             // and increase length until no match is found.
             // Performance analysis: http://neil.fraser.name/news/2010/11/04/
-            int best = 0;
-            int length = 1;
+            var best = 0;
+            var length = 1;
             while (true)
             {
-                string pattern = text1.Substring(text_length - length);
-                int found = text2.IndexOf(pattern, StringComparison.Ordinal);
+                var pattern = text1.Substring(textLength - length);
+                var found = text2.IndexOf(pattern, StringComparison.Ordinal);
                 if (found == -1)
                 {
                     return best;
                 }
                 length += found;
-                if (found == 0 || text1.Substring(text_length - length) ==
+                if (found == 0 || text1.Substring(textLength - length) ==
                     text2.Substring(0, length))
                 {
                     best = length;
@@ -111,75 +112,69 @@ namespace DiffMatchPatch
          * @param longtext Longer string.
          * @param shorttext Shorter string.
          * @param i Start index of quarter length Substring within longtext.
-         * @return Five element string array, containing the prefix of longtext, the
-         *     suffix of longtext, the prefix of shorttext, the suffix of shorttext
-         *     and the common middle.  Or null if there was no match.
+         * @return half match result
          */
 
-        private static string[] HalfMatchI(string longtext, string shorttext, int i)
+        private static HalfMatchResult HalfMatchI(string longtext, string shorttext, int i)
         {
             // Start with a 1/4 length Substring at position i as a seed.
-            string seed = longtext.Substring(i, longtext.Length / 4);
-            int j = -1;
-            string best_common = string.Empty;
-            string best_longtext_a = string.Empty, best_longtext_b = string.Empty;
-            string best_shorttext_a = string.Empty, best_shorttext_b = string.Empty;
-            while (j < shorttext.Length && (j = shorttext.IndexOf(seed, j + 1,
-                StringComparison.Ordinal)) != -1)
+            var seed = longtext.Substring(i, longtext.Length / 4);
+            var j = -1;
+
+            var bestCommon = string.Empty;
+            string bestLongtextA = string.Empty, bestLongtextB = string.Empty;
+            string bestShorttextA = string.Empty, bestShorttextB = string.Empty;
+            
+            while (j < shorttext.Length && (j = shorttext.IndexOf(seed, j + 1, StringComparison.Ordinal)) != -1)
             {
-                int prefixLength = CommonPrefix(longtext.Substring(i), shorttext.Substring(j));
-                int suffixLength = CommonSuffix(longtext.Substring(0, i), shorttext.Substring(0, j));
-                if (best_common.Length < suffixLength + prefixLength)
+                var prefixLength = CommonPrefix(longtext.Substring(i), shorttext.Substring(j));
+                var suffixLength = CommonSuffix(longtext.Substring(0, i), shorttext.Substring(0, j));
+                if (bestCommon.Length < suffixLength + prefixLength)
                 {
-                    best_common = shorttext.Substring(j - suffixLength, suffixLength)
-                                  + shorttext.Substring(j, prefixLength);
-                    best_longtext_a = longtext.Substring(0, i - suffixLength);
-                    best_longtext_b = longtext.Substring(i + prefixLength);
-                    best_shorttext_a = shorttext.Substring(0, j - suffixLength);
-                    best_shorttext_b = shorttext.Substring(j + prefixLength);
+                    bestCommon = shorttext.Substring(j - suffixLength, suffixLength) + shorttext.Substring(j, prefixLength);
+                    bestLongtextA = longtext.Substring(0, i - suffixLength);
+                    bestLongtextB = longtext.Substring(i + prefixLength);
+                    bestShorttextA = shorttext.Substring(0, j - suffixLength);
+                    bestShorttextB = shorttext.Substring(j + prefixLength);
                 }
             }
-            if (best_common.Length * 2 >= longtext.Length)
-            {
-                return new string[]{best_longtext_a, best_longtext_b,
-                    best_shorttext_a, best_shorttext_b, best_common};
-            }
-            else
-            {
-                return null;
-            }
-
+            return bestCommon.Length*2 >= longtext.Length
+                ? new HalfMatchResult(bestLongtextA, bestLongtextB, bestShorttextA, bestShorttextB, bestCommon)
+                : null;
         }
 
         /**
          * Do the two texts share a Substring which is at least half the length of
          * the longer text?
-         * This speedup can produce non-minimal diffs.
+         * This speedup can produce non-minimal Diffs.
          * @param text1 First string.
          * @param text2 Second string.
          * @return Five element String array, containing the prefix of text1, the
          *     suffix of text1, the prefix of text2, the suffix of text2 and the
          *     common middle.  Or null if there was no match.
          */
-        public static string[] HalfMatch(string text1, string text2)
+
+        internal static HalfMatchResult HalfMatch(string text1, string text2)
         {
-            string longtext = text1.Length > text2.Length ? text1 : text2;
-            string shorttext = text1.Length > text2.Length ? text2 : text1;
-            if (longtext.Length < 4 || shorttext.Length * 2 < longtext.Length)
+            var longtext = text1.Length > text2.Length ? text1 : text2;
+            var shorttext = text1.Length > text2.Length ? text2 : text1;
+            if (longtext.Length < 4 || shorttext.Length*2 < longtext.Length)
             {
-                return null;  // Pointless.
+                return null; // Pointless.
             }
 
             // First check if the second quarter is the seed for a half-match.
-            string[] hm1 = HalfMatchI(longtext, shorttext, (longtext.Length + 3) / 4);
+            var hm1 = HalfMatchI(longtext, shorttext, (longtext.Length + 3)/4);
             // Check again based on the third quarter.
-            string[] hm2 = HalfMatchI(longtext, shorttext, (longtext.Length + 1) / 2);
-            string[] hm;
+            var hm2 = HalfMatchI(longtext, shorttext, (longtext.Length + 1)/2);
+            
+            HalfMatchResult hm;
             if (hm1 == null && hm2 == null)
             {
                 return null;
             }
-            else if (hm2 == null)
+            
+            if (hm2 == null)
             {
                 hm = hm1;
             }
@@ -190,18 +185,17 @@ namespace DiffMatchPatch
             else
             {
                 // Both matched.  Select the longest.
-                hm = hm1[4].Length > hm2[4].Length ? hm1 : hm2;
+                hm = hm1.CommonMiddle.Length > hm2.CommonMiddle.Length ? hm1 : hm2;
             }
 
             // A half-match was found, sort out the return data.
             if (text1.Length > text2.Length)
             {
                 return hm;
-                //return new string[]{hm[0], hm[1], hm[2], hm[3], hm[4]};
             }
             else
             {
-                return new string[] { hm[2], hm[3], hm[0], hm[1], hm[4] };
+                return new HalfMatchResult(hm.Prefix2, hm.Suffix2, hm.Prefix1, hm.Suffix1, hm.CommonMiddle);
             }
         }
 
@@ -214,10 +208,10 @@ namespace DiffMatchPatch
          *     encoded text2 and the List of unique strings.  The zeroth element
          *     of the List of unique strings is intentionally blank.
          */
-        public static Tuple<string, string, List<string>> LinesToChars(string text1, string text2)
+        internal static Tuple<string, string, List<string>> LinesToChars(string text1, string text2)
         {
-            List<string> lineArray = new List<string>();
-            Dictionary<string, int> lineHash = new Dictionary<string, int>();
+            var lineArray = new List<string>();
+            var lineHash = new Dictionary<string, int>();
             // e.g. linearray[4] == "Hello\n"
             // e.g. linehash.get("Hello\n") == 4
 
@@ -225,8 +219,8 @@ namespace DiffMatchPatch
             // So we'll insert a junk entry to avoid generating a null character.
             lineArray.Add(string.Empty);
 
-            string chars1 = LinesToCharsMunge(text1, lineArray, lineHash);
-            string chars2 = LinesToCharsMunge(text2, lineArray, lineHash);
+            var chars1 = LinesToCharsMunge(text1, lineArray, lineHash);
+            var chars2 = LinesToCharsMunge(text2, lineArray, lineHash);
             return Tuple.Create(chars1, chars2, lineArray);
 
         }
@@ -239,12 +233,13 @@ namespace DiffMatchPatch
          * @param lineHash Map of strings to indices.
          * @return Encoded string.
          */
-        public static string LinesToCharsMunge(string text, List<string> lineArray, Dictionary<string, int> lineHash)
+
+        private static string LinesToCharsMunge(string text, List<string> lineArray, Dictionary<string, int> lineHash)
         {
-            int lineStart = 0;
-            int lineEnd = -1;
+            var lineStart = 0;
+            var lineEnd = -1;
             string line;
-            StringBuilder chars = new StringBuilder();
+            var chars = new StringBuilder();
             // Walk the text, pulling out a Substring for each line.
             // text.split('\n') would would temporarily double our memory footprint.
             // Modifying text would create many large strings to garbage collect.
@@ -260,16 +255,93 @@ namespace DiffMatchPatch
 
                 if (lineHash.ContainsKey(line))
                 {
-                    chars.Append(((char)lineHash[line]));
+                    chars.Append((char)lineHash[line]);
                 }
                 else
                 {
                     lineArray.Add(line);
                     lineHash.Add(line, lineArray.Count - 1);
-                    chars.Append(((char)(lineArray.Count - 1)));
+                    chars.Append((char)(lineArray.Count - 1));
                 }
             }
             return chars.ToString();
+        }
+
+        /**
+       * Unescape selected chars for compatability with JavaScript's encodeURI.
+       * In speed critical applications this could be dropped since the
+       * receiving application will certainly decode these fine.
+       * Note that this function is case-sensitive.  Thus "%3F" would not be
+       * unescaped.  But this is ok because it is only called with the output of
+       * HttpUtility.UrlEncode which returns lowercase hex.
+       *
+       * Example: "%3f" -> "?", "%24" -> "$", etc.
+       *
+       * @param str The string to escape.
+       * @return The escaped string.
+       */
+        internal static string UnescapeForEncodeUriCompatability(this string str)
+        {
+            return str.Replace("%21", "!").Replace("%7e", "~")
+                .Replace("%27", "'").Replace("%28", "(").Replace("%29", ")")
+                .Replace("%3b", ";").Replace("%2f", "/").Replace("%3f", "?")
+                .Replace("%3a", ":").Replace("%40", "@").Replace("%26", "&")
+                .Replace("%3d", "=").Replace("%2b", "+").Replace("%24", "$")
+                .Replace("%2c", ",").Replace("%23", "#");
+        }
+
+        internal static string UrlEncoded(this string str)
+        {
+            return HttpUtility.UrlEncode(str, new UTF8Encoding());
+        }
+
+        //  MATCH FUNCTIONS
+
+
+        /**
+         * Locate the best instance of 'pattern' in 'text' near 'loc'.
+         * Returns -1 if no match found.
+         * @param text The text to search.
+         * @param pattern The pattern to search for.
+         * @param loc The location to search around.
+         * @return Best match index or -1.
+         */
+        internal static int MatchPattern(this string text, string pattern, int loc)
+        {
+            return MatchPattern(text, pattern, loc, MatchSettings.Default);
+        }
+        internal static int MatchPattern(this string text, string pattern, int loc, MatchSettings settings)
+        {
+            // Check for null inputs not needed since null can't be passed in C#.
+
+            loc = Math.Max(0, Math.Min(loc, text.Length));
+            if (text == pattern)
+            {
+                // Shortcut (potentially not guaranteed by the algorithm)
+                return 0;
+            }
+            if (text.Length == 0)
+            {
+                // Nothing to match.
+                return -1;
+            }
+            if (loc + pattern.Length <= text.Length
+                && text.Substring(loc, pattern.Length) == pattern)
+            {
+                // Perfect match at the perfect spot!  (Includes case of null pattern)
+                return loc;
+            }
+            // Do a fuzzy compare.
+            return MatchBitap(text, pattern, loc, settings);
+        }
+
+        
+
+        private static int MatchBitap(this string text, string pattern, int loc, MatchSettings settings)
+        {
+            var bitap = new BitapAlgorithm(settings);
+            return bitap.Match(text, pattern, loc);
+
         }
     }
 }

@@ -26,13 +26,13 @@ namespace DiffMatchPatch
     internal static class Extensions
     {
         // JScript splice function
-        public static List<T> Splice<T>(this List<T> input, int start, int count, params T[] objects)
+        internal static List<T> Splice<T>(this List<T> input, int start, int count, params T[] objects)
         {
             IEnumerable<T> enumerable = objects;
             return input.Splice(start, count, enumerable);
         }
 
-        public static List<T> Splice<T>(this List<T> input, int start, int count, IEnumerable<T> objects)
+        internal static List<T> Splice<T>(this List<T> input, int start, int count, IEnumerable<T> objects)
         {
             var deletedRange = input.GetRange(start, count);
             input.RemoveRange(start, count);
@@ -41,32 +41,10 @@ namespace DiffMatchPatch
         }
 
         // Java substring function
-        public static string JavaSubstring(this string s, int begin, int end)
+        internal static string JavaSubstring(this string s, int begin, int end)
         {
             return s.Substring(begin, end - begin);
         }
     }
 
-    /**-
-     * The data structure representing a diff is a List of Diff objects:
-     * {Diff(Operation.DELETE, "Hello"), Diff(Operation.INSERT, "Goodbye"),
-     *  Diff(Operation.EQUAL, " world.")}
-     * which means: delete "Hello", add "Goodbye" and keep " world."
-     */
-
-
-    /**
-     * Class representing one diff operation.
-     */
-
-
-    /**
-     * Class representing one patch operation.
-     */
-
-
-    /**
-     * Class containing the diff, match and patch methods.
-     * Also Contains the behaviour settings.
-     */
 }
