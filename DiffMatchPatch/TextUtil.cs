@@ -236,7 +236,6 @@ namespace DiffMatchPatch
         {
             var lineStart = 0;
             var lineEnd = -1;
-            string line;
             var chars = new StringBuilder();
             // Walk the text, pulling out a Substring for each line.
             // text.split('\n') would would temporarily double our memory footprint.
@@ -248,7 +247,7 @@ namespace DiffMatchPatch
                 {
                     lineEnd = text.Length - 1;
                 }
-                line = text.JavaSubstring(lineStart, lineEnd + 1);
+                var line = text.Substring(lineStart, lineEnd + 1 - lineStart);
                 lineStart = lineEnd + 1;
 
                 if (lineHash.ContainsKey(line))

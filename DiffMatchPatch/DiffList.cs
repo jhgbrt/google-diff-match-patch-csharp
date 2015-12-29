@@ -230,7 +230,6 @@ namespace DiffMatchPatch
             var countInsert = 0;
             var textDelete = string.Empty;
             var textInsert = string.Empty;
-            int commonlength;
 
             var pointer = 0;
             while (pointer < diffs.Count)
@@ -254,7 +253,7 @@ namespace DiffMatchPatch
                             if (countDelete != 0 && countInsert != 0)
                             {
                                 // Factor out any common prefixies.
-                                commonlength = TextUtil.CommonPrefix(textInsert, textDelete);
+                                var commonlength = TextUtil.CommonPrefix(textInsert, textDelete);
                                 if (commonlength != 0)
                                 {
                                     var index = pointer - countDelete - countInsert - 1;
@@ -475,8 +474,8 @@ namespace DiffMatchPatch
             var whitespace2 = nonAlphaNumeric2 && Char.IsWhiteSpace(char2);
             var lineBreak1 = whitespace1 && Char.IsControl(char1);
             var lineBreak2 = whitespace2 && Char.IsControl(char2);
-            var blankLine1 = lineBreak1 && _blanklineend.IsMatch(one);
-            var blankLine2 = lineBreak2 && _blanklinestart.IsMatch(two);
+            var blankLine1 = lineBreak1 && BlankLineEnd.IsMatch(one);
+            var blankLine2 = lineBreak2 && BlankLineStart.IsMatch(two);
 
             if (blankLine1 || blankLine2)
             {
@@ -507,8 +506,8 @@ namespace DiffMatchPatch
         }
 
         // Define some regex patterns for matching boundaries.
-        private static Regex _blanklineend = new Regex("\\n\\r?\\n\\Z");
-        private static Regex _blanklinestart = new Regex("\\A\\r?\\n\\r?\\n");
+        private static readonly Regex BlankLineEnd = new Regex("\\n\\r?\\n\\Z", RegexOptions.Compiled);
+        private static readonly Regex BlankLineStart = new Regex("\\A\\r?\\n\\r?\\n", RegexOptions.Compiled);
 
         /// <summary>
         /// Reduce the number of edits by eliminating operationally trivial equalities.

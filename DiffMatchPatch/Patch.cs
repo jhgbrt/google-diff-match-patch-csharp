@@ -93,6 +93,7 @@ namespace DiffMatchPatch
         /// Increase the context until it is unique,
         /// but don't let the pattern expand beyond Match_MaxBits.</summary>
         /// <param name="text">Source text</param>
+        /// <param name="patchMargin"></param>
         internal void AddContext(string text, short patchMargin = 4)
         {
             if (text.Length == 0)
@@ -109,22 +110,23 @@ namespace DiffMatchPatch
                    && pattern.Length < Constants.MatchMaxBits - patchMargin - patchMargin)
             {
                 padding += patchMargin;
-                pattern = text.JavaSubstring(Math.Max(0, Start2 - padding),
-                    Math.Min(text.Length, Start2 + Length1 + padding));
+                int begin = Math.Max(0, Start2 - padding);
+                pattern = text.Substring(begin, Math.Min(text.Length, Start2 + Length1 + padding) - begin);
             }
             // Add one chunk for good luck.
             padding += patchMargin;
 
             // Add the prefix.
-            var prefix = text.JavaSubstring(Math.Max(0, Start2 - padding),
-                Start2);
+            int begin1 = Math.Max(0, Start2 - padding);
+            var prefix = text.Substring(begin1, Start2 - begin1);
             if (prefix.Length != 0)
             {
                 Diffs.Insert(0, Diff.Equal(prefix));
             }
             // Add the suffix.
-            var suffix = text.JavaSubstring(Start2 + Length1,
-                Math.Min(text.Length, Start2 + Length1 + padding));
+            int begin2 = Start2 + Length1;
+            var length = Math.Min(text.Length, Start2 + Length1 + padding) - begin2;
+            var suffix = text.Substring(begin2, length);
             if (suffix.Length != 0)
             {
                 Diffs.Add(Diff.Equal(suffix));

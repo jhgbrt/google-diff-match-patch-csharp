@@ -14,7 +14,7 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="patches"></param>
         /// <returns></returns>
-        internal static List<Patch> DeepCopy(this IEnumerable<Patch> patches)
+        private static List<Patch> DeepCopy(this IEnumerable<Patch> patches)
         {
             return (from p in patches select p.Copy()).ToList();
         }
@@ -105,6 +105,8 @@ namespace DiffMatchPatch
             }
             return text.ToString();
         }
+        
+        static readonly Regex PatchHeader = new Regex("^@@ -(\\d+),?(\\d*) \\+(\\d+),?(\\d*) @@$", RegexOptions.Compiled);
 
         /// <summary>
         /// Parse a textual representation of patches and return a List of Patch
@@ -118,12 +120,11 @@ namespace DiffMatchPatch
             {
                 return patches;
             }
-            var patchHeader = new Regex("^@@ -(\\d+),?(\\d*) \\+(\\d+),?(\\d*) @@$");
             var text = textline.Split('\n');
             var textPointer = 0;
             while (textPointer < text.Length)
             {
-                var m = patchHeader.Match(text[textPointer]);
+                var m = PatchHeader.Match(text[textPointer]);
                 if (!m.Success)
                 {
                     throw new ArgumentException("Invalid patch string: " + text[textPointer]);
@@ -296,17 +297,16 @@ namespace DiffMatchPatch
                     // Found a match.  :)
                     results[x] = true;
                     delta = startLoc - expectedLoc;
-                    string text2;
+                    int actualEndLoc;
                     if (endLoc == -1)
                     {
-                        text2 = text.JavaSubstring(startLoc,
-                            Math.Min(startLoc + text1.Length, text.Length));
+                        actualEndLoc = Math.Min(startLoc + text1.Length, text.Length);
                     }
                     else
                     {
-                        text2 = text.JavaSubstring(startLoc,
-                            Math.Min(endLoc + Constants.MatchMaxBits, text.Length));
+                        actualEndLoc = Math.Min(endLoc + Constants.MatchMaxBits, text.Length);
                     }
+                    var text2 = text.Substring(startLoc, actualEndLoc - startLoc);
                     if (text1 == text2)
                     {
                         // Perfect match, just shove the Replacement text in.
@@ -453,17 +453,9 @@ namespace DiffMatchPatch
                     precontext = precontext.Substring(Math.Max(0,
                         precontext.Length - patchMargin));
 
-                    string postcontext = null;
                     // Append the end context for this patch.
-                    if (diffs.Text1().Length > patchMargin)
-                    {
-                        postcontext = diffs.Text1()
-                            .Substring(0, patchMargin);
-                    }
-                    else
-                    {
-                        postcontext = diffs.Text1();
-                    }
+                    var text1 = diffs.Text1();
+                    var postcontext = text1.Length > patchMargin ? text1.Substring(0, patchMargin) : text1;
 
                     if (postcontext.Length != 0)
                     {
