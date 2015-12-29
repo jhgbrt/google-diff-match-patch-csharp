@@ -9,22 +9,23 @@ namespace DiffMatchPatch
 {
     public static class PatchList
     {
-        /**
-         * Given an array of patches, return another array that is identical.
-         * @param patches Array of Patch objects.
-         * @return Array of Patch objects.
-         */
-        internal static List<Patch> DeepCopy(this List<Patch> patches)
+        /// <summary>
+        /// Given an array of patches, return another array that is identical.
+        /// </summary>
+        /// <param name="patches"></param>
+        /// <returns></returns>
+        internal static List<Patch> DeepCopy(this IEnumerable<Patch> patches)
         {
             return (from p in patches select p.Copy()).ToList();
         }
 
-        /**
-         * Add some padding on text start and end so that edges can match something.
-         * Intended to be called only from within patch_apply.
-         * @param patches Array of Patch objects.
-         * @return The padding string added to each side.
-         */
+        /// <summary>
+        /// Add some padding on text start and end so that edges can match something.
+        /// Intended to be called only from within patch_apply.
+        /// </summary>
+        /// <param name="patches"></param>
+        /// <param name="patchMargin"></param>
+        /// <returns>The padding string added to each side.</returns>
         internal static string AddPadding(this List<Patch> patches, short patchMargin = 4)
         {
             var paddingLength = patchMargin;
@@ -90,11 +91,11 @@ namespace DiffMatchPatch
             return nullPadding;
         }
 
-        /**
-         * Take a list of patches and return a textual representation.
-         * @param patches List of Patch objects.
-         * @return Text representation of patches.
-         */
+        /// <summary>
+        /// Take a list of patches and return a textual representation.
+        /// </summary>
+        /// <param name="patches"></param>
+        /// <returns></returns>
         public static string ToText(this List<Patch> patches)
         {
             var text = new StringBuilder();
@@ -105,13 +106,11 @@ namespace DiffMatchPatch
             return text.ToString();
         }
 
-        /**
-              * Parse a textual representation of patches and return a List of Patch
-              * objects.
-              * @param textline Text representation of patches.
-              * @return List of Patch objects.
-              * @throws ArgumentException If invalid input.
-              */
+        /// <summary>
+        /// Parse a textual representation of patches and return a List of Patch
+        /// objects.</summary>
+        /// <param name="textline"></param>
+        /// <returns></returns>
         public static List<Patch> Parse(string textline)
         {
             var patches = new List<Patch>();
@@ -208,29 +207,30 @@ namespace DiffMatchPatch
             return patches;
         }
 
-        /**
-         * Merge a set of patches onto the text.  Return a patched text, as well
-         * as an array of true/false values indicating which patches were applied.
-         * @param patches Array of Patch objects
-         * @param text Old text.
-         * @return Two element Object array, containing the new text and an array of
-         *      bool values.
-         */
+        /// <summary>
+        /// Merge a set of patches onto the text.  Return a patched text, as well
+        /// as an array of true/false values indicating which patches were applied.</summary>
+        /// <param name="patches"></param>
+        /// <param name="text">Old text</param>
+        /// <returns>Two element Object array, containing the new text and an array of
+        ///  bool values.</returns>
 
         public static Tuple<string, bool[]> Apply(this List<Patch> patches, string text)
         {
             return Apply(patches, text, MatchSettings.Default);
         }
 
-        /**
-         * Merge a set of patches onto the text.  Return a patched text, as well
-         * as an array of true/false values indicating which patches were applied.
-         * @param patches Array of Patch objects
-         * @param text Old text.
-         * @return Two element Object array, containing the new text and an array of
-         *      bool values.
-         */
-        public static Tuple<string, bool[]> Apply(this List<Patch> patches, string text, 
+
+        /// <summary>
+        /// Merge a set of patches onto the text.  Return a patched text, as well
+        /// as an array of true/false values indicating which patches were applied.</summary>
+        /// <param name="patches"></param>
+        /// <param name="text">Old text</param>
+        /// <param name="matchSettings"></param>
+        /// <param name="settings"></param>
+        /// <returns>Two element Object array, containing the new text and an array of
+        ///  bool values.</returns>
+        public static Tuple<string, bool[]> Apply(this List<Patch> patches, string text,
             MatchSettings matchSettings, PatchSettings settings = null
             )
         {
@@ -361,13 +361,13 @@ namespace DiffMatchPatch
             return Tuple.Create(text, results);
         }
 
-
-        /**
-         * Look through the patches and break up any which are longer than the
-         * maximum limit of the match algorithm.
-         * Intended to be called only from within patch_apply.
-         * @param patches List of Patch objects.
-         */
+        /// <summary>
+        /// Look through the patches and break up any which are longer than the
+        /// maximum limit of the match algorithm.
+        /// Intended to be called only from within patch_apply.
+        ///  </summary>
+        /// <param name="patches"></param>
+        /// <param name="patchMargin"></param>
         internal static void SplitMax(this List<Patch> patches, short patchMargin = 4)
         {
             var patchSize = Constants.MatchMaxBits;

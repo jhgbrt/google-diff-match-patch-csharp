@@ -9,11 +9,11 @@ namespace DiffMatchPatch
 {
     public static class DiffList
     {
-        /**
-         * Compute and return the source text (all equalities and deletions).
-         * @param Diffs List of Diff objects.
-         * @return Source text.
-         */
+        /// <summary>
+        /// Compute and return the source text (all equalities and deletions).
+        /// </summary>
+        /// <param name="diffs"></param>
+        /// <returns></returns>
         public static string Text1(this List<Diff> diffs)
         {
             var text = new StringBuilder();
@@ -27,11 +27,11 @@ namespace DiffMatchPatch
             return text.ToString();
         }
 
-        /**
-        * Compute and return the destination text (all equalities and insertions).
-        * @param Diffs List of Diff objects.
-        * @return Destination text.
-        */
+        /// <summary>
+        /// Compute and return the destination text (all equalities and insertions).
+        /// </summary>
+        /// <param name="diffs"></param>
+        /// <returns></returns>
         public static string Text2(this List<Diff> diffs)
         {
             var text = new StringBuilder();
@@ -44,15 +44,13 @@ namespace DiffMatchPatch
             }
             return text.ToString();
         }
-
-
-        /**
-         * Compute the Levenshtein distance; the number of inserted, deleted or
-         * substituted characters.
-         * @param Diffs List of Diff objects.
-         * @return Number of changes.
-         */
-        public static int Levenshtein(this List<Diff> diffs)
+        
+        /// <summary>
+        /// Compute the Levenshtein distance; the number of inserted, deleted or substituted characters.
+        /// </summary>
+        /// <param name="diffs"></param>
+        /// <returns></returns>
+        public static int Levenshtein(this IEnumerable<Diff> diffs)
         {
             var levenshtein = 0;
             var insertions = 0;
@@ -79,12 +77,12 @@ namespace DiffMatchPatch
             return levenshtein;
         }
 
-        /**
-        * Convert a Diff list into a pretty HTML report.
-        * @param Diffs List of Diff objects.
-        * @return HTML representation.
-        */
-        public static string PrettyHtml(this List<Diff> diffs)
+        /// <summary>
+        /// Convert a Diff list into a pretty HTML report.
+        /// </summary>
+        /// <param name="diffs"></param>
+        /// <returns></returns>
+        public static string PrettyHtml(this IEnumerable<Diff> diffs)
         {
             var html = new StringBuilder();
             foreach (var aDiff in diffs)
@@ -108,15 +106,16 @@ namespace DiffMatchPatch
             }
             return html.ToString();
         }
-        /**
-        * Crush the diff into an encoded string which describes the operations
-        * required to transform text1 into text2.
-        * E.g. =3\t-2\t+ing  -> Keep 3 chars, delete 2 chars, insert 'ing'.
-        * Operations are tab-separated.  Inserted text is escaped using %xx
-        * notation.
-        * @param Diffs Array of Diff objects.
-        * @return Delta text.
-        */
+
+        /// <summary>
+        /// Crush the diff into an encoded string which describes the operations
+        /// required to transform text1 into text2.
+        /// E.g. =3\t-2\t+ing  -> Keep 3 chars, delete 2 chars, insert 'ing'.
+        /// Operations are tab-separated.  Inserted text is escaped using %xx
+        /// notation.
+        /// </summary>
+        /// <param name="diffs"></param>
+        /// <returns></returns>
         public static string ToDelta(this List<Diff> diffs)
         {
             var s =
@@ -134,14 +133,13 @@ namespace DiffMatchPatch
             return delta;
         }
 
-        /**
-         * Given the original text1, and an encoded string which describes the
-         * operations required to transform text1 into text2, comAdde the full diff.
-         * @param text1 Source string for the diff.
-         * @param delta Delta text.
-         * @return Array of Diff objects or null if invalid.
-         * @throws ArgumentException If invalid input.
-         */
+        /// <summary>
+        /// Given the original text1, and an encoded string which describes the
+        /// operations required to transform text1 into text2, comAdde the full diff.
+        /// </summary>
+        /// <param name="text1">Source string for the diff.</param>
+        /// <param name="delta">Delta text.</param>
+        /// <returns></returns>
         public static List<Diff> FromDelta(string text1, string delta)
         {
             var diffs = new List<Diff>();
@@ -163,16 +161,7 @@ namespace DiffMatchPatch
                     case '+':
                         // decode would change all "+" to " "
                         param = param.Replace("+", "%2b");
-
                         param = HttpUtility.UrlDecode(param, new UTF8Encoding(false, true));
-                        //} catch (UnsupportedEncodingException e) {
-                        //  // Not likely on modern system.
-                        //  throw new Error("This system does not support UTF-8.", e);
-                        //} catch (IllegalArgumentException e) {
-                        //  // Malformed URI sequence.
-                        //  throw new IllegalArgumentException(
-                        //      "Illegal escape in diff_fromDelta: " + param, e);
-                        //}
                         diffs.Add(Diff.Insert(param));
                         break;
                     case '-':
@@ -228,11 +217,11 @@ namespace DiffMatchPatch
             return diffs;
         }
 
-        /**
-        * Reorder and merge like edit sections.  Merge equalities.
-        * Any edit section can move as long as it doesn't cross an equality.
-        * @param Diffs List of Diff objects.
-        */
+        /// <summary>
+        /// Reorder and merge like edit sections.  Merge equalities.
+        /// Any edit section can move as long as it doesn't cross an equality.
+        /// </summary>
+        /// <param name="diffs">list of Diffs</param>
         public static void CleanupMerge(this List<Diff> diffs)
         {
             // Add a dummy entry at the end.
@@ -384,12 +373,12 @@ namespace DiffMatchPatch
             }
         }
 
-        /**
-        * Look for single edits surrounded on both sides by equalities
-        * which can be shifted sideways to align the edit to a word boundary.
-        * e.g: The c<ins>at c</ins>ame. -> The <ins>cat </ins>came.
-        * @param Diffs List of Diff objects.
-        */
+        /// <summary>
+        /// Look for single edits surrounded on both sides by equalities
+        /// which can be shifted sideways to align the edit to a word boundary.
+        /// e.g: The c<ins>at c</ins>ame. -> The <ins>cat </ins>came.
+        /// </summary>
+        /// <param name="diffs"></param>
         public static void CleanupSemanticLossless(this List<Diff> diffs)
         {
             var pointer = 1;
@@ -457,15 +446,14 @@ namespace DiffMatchPatch
             }
         }
 
-
-        /**
-         * Given two strings, compute a score representing whether the internal
-         * boundary falls on logical boundaries.
-         * Scores range from 6 (best) to 0 (worst).
-         * @param one First string.
-         * @param two Second string.
-         * @return The score.
-         */
+        /// <summary>
+        /// Given two strings, compute a score representing whether the internal
+        /// boundary falls on logical boundaries.
+        /// Scores range from 6 (best) to 0 (worst).
+        ///  </summary>
+        /// <param name="one"></param>
+        /// <param name="two"></param>
+        /// <returns>score</returns>
         private static int DiffCleanupSemanticScore(string one, string two)
         {
             if (one.Length == 0 || two.Length == 0)
@@ -522,12 +510,11 @@ namespace DiffMatchPatch
         private static Regex _blanklineend = new Regex("\\n\\r?\\n\\Z");
         private static Regex _blanklinestart = new Regex("\\A\\r?\\n\\r?\\n");
 
-
-        /**
-       * Reduce the number of edits by eliminating operationally trivial
-       * equalities.
-       * @param Diffs List of Diff objects.
-       */
+        /// <summary>
+        /// Reduce the number of edits by eliminating operationally trivial equalities.
+        /// </summary>
+        /// <param name="diffs"></param>
+        /// <param name="diffEditCost"></param>
         public static void CleanupEfficiency(this List<Diff> diffs, short diffEditCost = 4)
         {
             var changes = false;
@@ -620,11 +607,10 @@ namespace DiffMatchPatch
             }
         }
 
-        /**
-         * Reduce the number of edits by eliminating semantically trivial
-         * equalities.
-         * @param Diffs List of Diff objects.
-         */
+        /// <summary>
+        /// Reduce the number of edits by eliminating semantically trivial equalities.
+        /// </summary>
+        /// <param name="diffs"></param>
         public static void CleanupSemantic(this List<Diff> diffs)
         {
             // Stack of indices where equalities are found.
@@ -746,18 +732,18 @@ namespace DiffMatchPatch
             }
         }
 
-        /**
-         * Rehydrate the text in a diff from a string of line hashes to real lines
-         * of text.
-         * @param Diffs List of Diff objects.
-         * @param lineArray List of unique strings.
-         */
+
+        /// <summary>
+        /// Rehydrate the text in a diff from a string of line hashes to real lines of text.
+        /// </summary>
+        /// <param name="diffs"></param>
+        /// <param name="lineArray">list of unique strings</param>
+        /// <returns></returns>
         public static IEnumerable<Diff> CharsToLines(this ICollection<Diff> diffs, IList<string> lineArray)
         {
-            StringBuilder text;
             foreach (var diff in diffs)
             {
-                text = new StringBuilder();
+                var text = new StringBuilder();
                 foreach (var c in diff.Text)
                 {
                     text.Append(lineArray[c]);
@@ -766,15 +752,12 @@ namespace DiffMatchPatch
             }
         }
 
-
-        /**
-        * loc is a location in text1, compute and return the equivalent location in
-        * text2.
-        * e.g. "The cat" vs "The big cat", 1->1, 5->8
-        * @param Diffs List of Diff objects.
-        * @param location1 Location within text1.
-        * @return Location within text2.
-        */
+        /// <summary>
+        /// Compute and return equivalent location in target text.
+        /// </summary>
+        /// <param name="diffs">list of diffs</param>
+        /// <param name="location1">location in source</param>
+        /// <returns>location in target</returns>
         public static int FindEquivalentLocation2(this List<Diff> diffs, int location1)
         {
             var chars1 = 0;

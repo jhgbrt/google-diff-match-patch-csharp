@@ -31,11 +31,6 @@ namespace DiffMatchPatch
         public readonly string Text;
         // The text associated with this diff operation.
 
-        /**
-         * Constructor.  Initializes the diff with the provided values.
-         * @param operation One of INSERT, DELETE or EQUAL.
-         * @param text The text being applied.
-         */
         Diff(Operation operation, string text)
         {
             // Construct a diff with the specified operation and text.
@@ -43,21 +38,21 @@ namespace DiffMatchPatch
             this.Text = text;
         }
 
-        /**
-         * Display a human-readable version of this Diff.
-         * @return text version.
-         */
+        /// <summary>
+        /// Generate a human-readable version of this Diff.
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             var prettyText = Text.Replace('\n', '\u00b6');
             return "Diff(" + Operation + ",\"" + prettyText + "\")";
         }
 
-        /**
-         * Is this Diff equivalent to another Diff?
-         * @param d Another Diff to compare against.
-         * @return true or false.
-         */
+        /// <summary>
+        /// Is this Diff equivalent to another Diff?
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(Object obj)
         {
             var p = obj as Diff;
@@ -95,15 +90,14 @@ namespace DiffMatchPatch
             return Create(Operation, Text);
         }
 
-        /**
-         * Find the differences between two texts.
-         * @param text1 Old string to be diffed.
-         * @param text2 New string to be diffed.
-         * @param checklines Speedup flag.  If false, then don't run a
-         *     line-level diff first to identify the changed areas.
-         *     If true, then run a faster slightly less optimal diff.
-         * @return List of Diff objects.
-         */
+        /// <summary>
+        /// Find the differences between two texts.
+        /// </summary>
+        /// <param name="text1">Old string to be diffed</param>
+        /// <param name="text2">New string to be diffed</param>
+        /// <param name="timeoutInSeconds">if specified, certain optimizations may be enabled to meet the time constraint, possibly resulting in a less optimal diff</param>
+        /// <param name="checklines">If false, then don't run a line-level diff first to identify the changed areas. If true, then run a faster slightly less optimal diff.</param>
+        /// <returns></returns>
         public static List<Diff> Compute(string text1, string text2, float timeoutInSeconds = 0f, bool checklines = true)
         {
             CancellationTokenSource cts;
@@ -118,23 +112,21 @@ namespace DiffMatchPatch
             }
 
 
-            return Compute(text1, text2, checklines, cts.Token, timeoutInSeconds > 0);
+            return Compute(text1, text2, checklines, cts.Token, optimizeForSpeed: timeoutInSeconds > 0);
         }
 
-        /**
-         * Find the differences between two texts.  Simplifies the problem by
-         * stripping any common prefix or suffix off the texts before diffing.
-         * @param text1 Old string to be diffed.
-         * @param text2 New string to be diffed.
-         * @param checklines Speedup flag.  If false, then don't run a
-         *     line-level diff first to identify the changed areas.
-         *     If true, then run a faster slightly less optimal diff.
-         * @param deadline Time when the diff should be complete by.  Used
-         *     internally for recursive calls.  Users should set DiffTimeout
-         *     instead.
-         * @return List of Diff objects.
-         */
-        private static List<Diff> Compute(string text1, string text2, bool checklines, CancellationToken token, bool timeout)
+       
+        /// <summary>
+        /// Find the differences between two texts.  Simplifies the problem by
+        /// stripping any common prefix or suffix off the texts before diffing.
+        /// </summary>
+        /// <param name="text1">Old string to be diffed.</param>
+        /// <param name="text2">New string to be diffed.</param>
+        /// <param name="checklines">Speedup flag.  If false, then don't run a line-level diff first to identify the changed areas. If true, then run a faster slightly less optimal diff.</param>
+        /// <param name="token">Cancellation token for cooperative cancellation</param>
+        /// <param name="optimizeForSpeed">Should optimizations be enabled?</param>
+        /// <returns></returns>
+        private static List<Diff> Compute(string text1, string text2, bool checklines, CancellationToken token, bool optimizeForSpeed)
         {
             // Check for null inputs not needed since null can't be passed in C#.
 
@@ -163,7 +155,7 @@ namespace DiffMatchPatch
             text2 = text2.Substring(0, text2.Length - commonlength);
 
             // Compute the diff on the middle block.
-            diffs = ComputeImpl(text1, text2, checklines, token, timeout);
+            diffs = ComputeImpl(text1, text2, checklines, token, optimizeForSpeed);
 
             // Restore the prefix and suffix.
             if (commonprefix.Length != 0)
@@ -179,19 +171,18 @@ namespace DiffMatchPatch
             return diffs;
         }
 
-        /**
-         * Find the differences between two texts.  Assumes that the texts do not
-         * have any common prefix or suffix.
-         * @param text1 Old string to be diffed.
-         * @param text2 New string to be diffed.
-         * @param checklines Speedup flag.  If false, then don't run a
-         *     line-level diff first to identify the changed areas.
-         *     If true, then run a faster slightly less optimal diff.
-         * @param deadline Time when the diff should be complete by.
-         * @return List of Diff objects.
-         */
+        /// <summary>
+        /// Find the differences between two texts.  Assumes that the texts do not
+        /// have any common prefix or suffix.
+        /// </summary>
+        /// <param name="text1">Old string to be diffed.</param>
+        /// <param name="text2">New string to be diffed.</param>
+        /// <param name="checklines">Speedup flag.  If false, then don't run a line-level diff first to identify the changed areas. If true, then run a faster slightly less optimal diff.</param>
+        /// <param name="token">Cancellation token for cooperative cancellation</param>
+        /// <param name="optimizeForSpeed">Should optimizations be enabled?</param>
+        /// <returns></returns>
         private static List<Diff> ComputeImpl(string text1, string text2,
-            bool checklines, CancellationToken token, bool timeout)
+            bool checklines, CancellationToken token, bool optimizeForSpeed)
         {
             var diffs = new List<Diff>();
 
@@ -232,7 +223,7 @@ namespace DiffMatchPatch
             }
 
             // Don't risk returning a non-optimal diff if we have unlimited time.
-            if (timeout)
+            if (optimizeForSpeed)
             {
                 // Check to see if the problem can be split in two.
                 var result = TextUtil.HalfMatch(text1, text2);
@@ -240,8 +231,8 @@ namespace DiffMatchPatch
                 {
                     // A half-match was found, sort out the return data.
                     // Send both pairs off for separate processing.
-                    var diffsA = Compute(result.Prefix1, result.Prefix1, checklines, token, timeout);
-                    var diffsB = Compute(result.Suffix1, result.Suffix2, checklines, token, timeout);
+                    var diffsA = Compute(result.Prefix1, result.Prefix1, checklines, token, optimizeForSpeed);
+                    var diffsB = Compute(result.Suffix1, result.Suffix2, checklines, token, optimizeForSpeed);
                     // Merge the results.
                     diffs = diffsA;
                     diffs.Add(Equal(result.CommonMiddle));
@@ -251,22 +242,22 @@ namespace DiffMatchPatch
             }
             if (checklines && text1.Length > 100 && text2.Length > 100)
             {
-                return LineDiff(text1, text2, token, timeout);
+                return LineDiff(text1, text2, token, optimizeForSpeed);
             }
 
-            return MyersDiffBisect(text1, text2, token, timeout);
+            return MyersDiffBisect(text1, text2, token, optimizeForSpeed);
         }
 
-        /**
-         * Do a quick line-level diff on both strings, then rediff the parts for
-         * greater accuracy.
-         * This speedup can produce non-minimal Diffs.
-         * @param text1 Old string to be diffed.
-         * @param text2 New string to be diffed.
-         * @param deadline Time when the diff should be complete by.
-         * @return List of Diff objects.
-         */
-        private static List<Diff> LineDiff(string text1, string text2, CancellationToken token, bool timeout)
+        /// <summary>
+        /// Do a quick line-level diff on both strings, then rediff the parts for
+        /// greater accuracy. This speedup can produce non-minimal Diffs.
+        /// </summary>
+        /// <param name="text1"></param>
+        /// <param name="text2"></param>
+        /// <param name="token"></param>
+        /// <param name="optimizeForSpeed"></param>
+        /// <returns></returns>
+        private static List<Diff> LineDiff(string text1, string text2, CancellationToken token, bool optimizeForSpeed)
         {
             // Scan the text on a line-by-line basis first.
             var b = TextUtil.LinesToChars(text1, text2);
@@ -274,7 +265,7 @@ namespace DiffMatchPatch
             text2 = b.Item2;
             var linearray = b.Item3;
 
-            var diffs = Compute(text1, text2, false, token, timeout);
+            var diffs = Compute(text1, text2, false, token, optimizeForSpeed);
 
             // Convert the diff back to original text.
             diffs = diffs.CharsToLines(linearray).ToList();
@@ -306,7 +297,7 @@ namespace DiffMatchPatch
                         if (countDelete >= 1 && countInsert >= 1)
                         {
                             // Delete the offending records and add the merged ones.
-                            var a = Compute(textDelete, textInsert, false, token, timeout);
+                            var a = Compute(textDelete, textInsert, false, token, optimizeForSpeed);
                             var count = countDelete + countInsert;
                             var index = pointer - count;
                             diffs.Splice(index, count, a);
@@ -325,16 +316,17 @@ namespace DiffMatchPatch
             return diffs;
         }
 
-        /**
-         * Find the 'middle snake' of a diff, split the problem in two
-         * and return the recursively constructed diff.
-         * See Myers 1986 paper: An O(ND) Difference Algorithm and Its Variations.
-         * @param text1 Old string to be diffed.
-         * @param text2 New string to be diffed.
-         * @param deadline Time at which to bail if not yet complete.
-         * @return List of Diff objects.
-         */
-        internal static List<Diff> MyersDiffBisect(string text1, string text2, CancellationToken token, bool timeout)
+        /// <summary>
+        /// Find the 'middle snake' of a diff, split the problem in two
+        /// and return the recursively constructed diff.
+        /// See Myers 1986 paper: An O(ND) Difference Algorithm and Its Variations.
+        /// </summary>
+        /// <param name="text1"></param>
+        /// <param name="text2"></param>
+        /// <param name="token"></param>
+        /// <param name="optimizeForSpeed"></param>
+        /// <returns></returns>
+        internal static List<Diff> MyersDiffBisect(string text1, string text2, CancellationToken token, bool optimizeForSpeed)
         {
             // Cache the text lengths to prevent multiple calls.
             var text1Length = text1.Length;
@@ -410,7 +402,7 @@ namespace DiffMatchPatch
                             if (x1 >= x2)
                             {
                                 // Overlap detected.
-                                return BisectSplit(text1, text2, x1, y1, token, timeout);
+                                return BisectSplit(text1, text2, x1, y1, token, optimizeForSpeed);
                             }
                         }
                     }
@@ -460,7 +452,7 @@ namespace DiffMatchPatch
                             if (x1 >= x2)
                             {
                                 // Overlap detected.
-                                return BisectSplit(text1, text2, x1, y1, token, timeout);
+                                return BisectSplit(text1, text2, x1, y1, token, optimizeForSpeed);
                             }
                         }
                     }
@@ -472,17 +464,18 @@ namespace DiffMatchPatch
             return diffs;
         }
 
-        /**
-         * Given the location of the 'middle snake', split the diff in two parts
-         * and recurse.
-         * @param text1 Old string to be diffed.
-         * @param text2 New string to be diffed.
-         * @param x Index of split point in text1.
-         * @param y Index of split point in text2.
-         * @param deadline Time at which to bail if not yet complete.
-         * @return LinkedList of Diff objects.
-         */
-        private static List<Diff> BisectSplit(string text1, string text2, int x, int y, CancellationToken token, bool timeout)
+        /// <summary>
+        /// Given the location of the 'middle snake', split the diff in two parts
+        /// and recurse.
+        /// </summary>
+        /// <param name="text1"></param>
+        /// <param name="text2"></param>
+        /// <param name="x">Index of split point in text1.</param>
+        /// <param name="y">Index of split point in text2.</param>
+        /// <param name="token"></param>
+        /// <param name="optimizeForSpeed"></param>
+        /// <returns></returns>
+        private static List<Diff> BisectSplit(string text1, string text2, int x, int y, CancellationToken token, bool optimizeForSpeed)
         {
             var text1A = text1.Substring(0, x);
             var text2A = text2.Substring(0, y);
@@ -490,8 +483,8 @@ namespace DiffMatchPatch
             var text2B = text2.Substring(y);
 
             // Compute both Diffs serially.
-            var diffs = Compute(text1A, text2A, false, token, timeout);
-            var diffsb = Compute(text1B, text2B, false, token, timeout);
+            var diffs = Compute(text1A, text2A, false, token, optimizeForSpeed);
+            var diffsb = Compute(text1B, text2B, false, token, optimizeForSpeed);
 
             diffs.AddRange(diffsb);
             return diffs;

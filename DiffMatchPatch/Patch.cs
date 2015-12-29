@@ -15,12 +15,12 @@ namespace DiffMatchPatch
         public int Length1 { get; internal set; }
         public int Length2 { get; internal set; }
 
-        /**
-         * Emmulate GNU diff's format.
-         * Header: @@ -382,8 +481,9 @@
-         * Indicies are printed as 1-based, not 0-based.
-         * @return The GNU diff string.
-         */
+        /// <summary>
+        /// Generate GNU diff's format.
+        /// Header: @@ -382,8 +481,9 @@
+        /// Indicies are printed as 1-based, not 0-based.
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             string coords1, coords2;
@@ -171,13 +171,14 @@ namespace DiffMatchPatch
             return Compute(text1, diffs);
         }
 
-        /**
-         * Compute a list of patches to turn text1 into text2.
-         * text2 is not provided, Diffs are the delta between text1 and text2.
-         * @param text1 Old text.
-         * @param Diffs Array of Diff objects for text1 to text2.
-         * @return List of Patch objects.
-         */
+        /// <summary>
+        /// Compute a list of patches to turn text1 into text2.
+        /// text2 is not provided, Diffs are the delta between text1 and text2.
+        /// </summary>
+        /// <param name="text1"></param>
+        /// <param name="diffs"></param>
+        /// <param name="patchMargin"></param>
+        /// <returns></returns>
         public static List<Patch> Compute(string text1, List<Diff> diffs, short patchMargin = 4)
         {
             // Check for null inputs not needed since null can't be passed in C#.

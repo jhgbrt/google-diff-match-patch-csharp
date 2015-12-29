@@ -18,15 +18,15 @@ namespace DiffMatchPatch
             _matchThreshold = settings.MatchThreshold;
             _matchDistance = settings.MatchDistance;
         }
-
-        /**
-         * Locate the best instance of 'pattern' in 'text' near 'loc' using the
-         * Bitap algorithm.  Returns -1 if no match found.
-         * @param text The text to search.
-         * @param pattern The pattern to search for.
-         * @param loc The location to search around.
-         * @return Best match index or -1.
-         */
+        
+        /// <summary>
+        /// Locate the best instance of 'pattern' in 'text' near 'loc' using the
+        /// Bitap algorithm.  Returns -1 if no match found.
+        /// </summary>
+        /// <param name="text">The text to search.</param>
+        /// <param name="pattern">The pattern to search for.</param>
+        /// <param name="loc">The location to search around.</param>
+        /// <returns>Best match index or -1.</returns>
         public int Match(string text, string pattern, int loc)
         {
             // assert (Match_MaxBits == 0 || pattern.Length <= Match_MaxBits)
@@ -143,25 +143,20 @@ namespace DiffMatchPatch
             return bestLoc;
         }
 
-        /**
-         * Initialise the alphabet for the Bitap algorithm.
-         * @param pattern The text to encode.
-         * @return Hash of character locations.
-         */
+        /// <summary>
+        /// Initialise the alphabet for the Bitap algorithm.
+        /// </summary>
+        /// <param name="pattern"></param>
+        /// <returns></returns>
         public static Dictionary<char, int> InitAlphabet(string pattern)
         {
             var s = new Dictionary<char, int>();
             var charPattern = pattern.ToCharArray();
-            foreach (var c in charPattern)
-            {
-                if (!s.ContainsKey(c))
-                {
-                    s.Add(c, 0);
-                }
-            }
             var i = 0;
             foreach (var c in charPattern)
             {
+                if (!s.ContainsKey(c))
+                    s.Add(c, 0);
                 var value = s[c] | (1 << (pattern.Length - i - 1));
                 s[c] = value;
                 i++;
@@ -169,14 +164,14 @@ namespace DiffMatchPatch
             return s;
         }
 
-        /**
-         * Compute and return the score for a match with e errors and x location.
-         * @param e Number of errors in match.
-         * @param x Location of match.
-         * @param loc Expected location of match.
-         * @param pattern Pattern being sought.
-         * @return Overall score for match (0.0 = good, 1.0 = bad).
-         */
+        /// <summary>
+        /// Compute and return the score for a match with e errors and x location.
+        /// </summary>
+        /// <param name="e">Number of errors in match.</param>
+        /// <param name="x">Location of match.</param>
+        /// <param name="loc">Expected location of match.</param>
+        /// <param name="pattern">Pattern being sought.</param>
+        /// <returns>Overall score for match (0.0 = good, 1.0 = bad).</returns>
         private double MatchBitapScore(int e, int x, int loc, string pattern)
         {
             var accuracy = (float)e / pattern.Length;

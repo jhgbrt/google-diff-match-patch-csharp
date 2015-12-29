@@ -7,12 +7,12 @@ namespace DiffMatchPatch
 {
     public static class TextUtil
     {
-        /**
-         * Determine the common prefix of two strings.
-         * @param text1 First string.
-         * @param text2 Second string.
-         * @return The number of characters common to the start of each string.
-         */
+        /// <summary>
+        /// Determine the common prefix of two strings as the number of characters common to the start of each string.
+        /// </summary>
+        /// <param name="text1"></param>
+        /// <param name="text2"></param>
+        /// <returns>The number of characters common to the start of each string.</returns>
         internal static int CommonPrefix(string text1, string text2)
         {
             // Performance analysis: http://neil.fraser.name/news/2007/10/09/
@@ -27,12 +27,12 @@ namespace DiffMatchPatch
             return n;
         }
 
-        /**
-         * Determine the common suffix of two strings.
-         * @param text1 First string.
-         * @param text2 Second string.
-         * @return The number of characters common to the end of each string.
-         */
+        /// <summary>
+        /// Determine the common suffix of two strings as the number of characters common to the end of each string.
+        /// </summary>
+        /// <param name="text1"></param>
+        /// <param name="text2"></param>
+        /// <returns>The number of characters common to the end of each string.</returns>
         internal static int CommonSuffix(string text1, string text2)
         {
             // Performance analysis: http://neil.fraser.name/news/2007/10/09/
@@ -49,13 +49,15 @@ namespace DiffMatchPatch
             return n;
         }
 
-        /**
-         * Determine if the suffix of one string is the prefix of another.
-         * @param text1 First string.
-         * @param text2 Second string.
-         * @return The number of characters common to the end of the first
-         *     string and the start of the second string.
-         */
+        /// <summary>
+        /// Determine if the suffix of one string is the prefix of another. Returns 
+        /// the number of characters common to the end of the first
+        /// string and the start of the second string.
+        /// </summary>
+        /// <param name="text1"></param>
+        /// <param name="text2"></param>
+        /// <returns>The number of characters common to the end of the first
+        ///  string and the start of the second string.</returns>
         internal static int CommonOverlap(string text1, string text2)
         {
             // Cache the text lengths to prevent multiple calls.
@@ -106,15 +108,14 @@ namespace DiffMatchPatch
 
         }
 
-        /**
-         * Does a Substring of shorttext exist within longtext such that the
-         * Substring is at least half the length of longtext?
-         * @param longtext Longer string.
-         * @param shorttext Shorter string.
-         * @param i Start index of quarter length Substring within longtext.
-         * @return half match result
-         */
-
+        /// <summary>
+        /// Does a Substring of shorttext exist within longtext such that the
+        /// Substring is at least half the length of longtext?
+        /// </summary>
+        /// <param name="longtext">Longer string.</param>
+        /// <param name="shorttext">Shorter string.</param>
+        /// <param name="i">Start index of quarter length Substring within longtext.</param>
+        /// <returns></returns>
         private static HalfMatchResult HalfMatchI(string longtext, string shorttext, int i)
         {
             // Start with a 1/4 length Substring at position i as a seed.
@@ -143,17 +144,15 @@ namespace DiffMatchPatch
                 : null;
         }
 
-        /**
-         * Do the two texts share a Substring which is at least half the length of
-         * the longer text?
-         * This speedup can produce non-minimal Diffs.
-         * @param text1 First string.
-         * @param text2 Second string.
-         * @return Five element String array, containing the prefix of text1, the
-         *     suffix of text1, the prefix of text2, the suffix of text2 and the
-         *     common middle.  Or null if there was no match.
-         */
-
+        /// <summary>
+        /// Do the two texts share a Substring which is at least half the length of
+        /// the longer text?
+        /// This speedup can produce non-minimal Diffs.
+        /// </summary>
+        /// <param name="text1"></param>
+        /// <param name="text2"></param>
+        /// <returns>Data structure containing the prefix and suffix of string1, 
+        /// the prefix and suffix of string 2, and the common middle. Null if there was no match.</returns>
         internal static HalfMatchResult HalfMatch(string text1, string text2)
         {
             var longtext = text1.Length > text2.Length ? text1 : text2;
@@ -199,15 +198,15 @@ namespace DiffMatchPatch
             }
         }
 
-        /**
-         * Split two texts into a list of strings.  Reduce the texts to a string of
-         * hashes where each Unicode character represents one line.
-         * @param text1 First string.
-         * @param text2 Second string.
-         * @return Three element Object array, containing the encoded text1, the
-         *     encoded text2 and the List of unique strings.  The zeroth element
-         *     of the List of unique strings is intentionally blank.
-         */
+        /// <summary>
+        /// Split two texts into a list of strings.  Reduce the texts to a string of
+        /// hashes where each Unicode character represents one line.
+        /// </summary>
+        /// <param name="text1"></param>
+        /// <param name="text2"></param>
+        /// <returns> Tuple containing the encoded text1, the
+        ///  encoded text2 and the List of unique strings.  The zeroth element
+        ///  of the List of unique strings is intentionally blank.</returns>
         internal static Tuple<string, string, List<string>> LinesToChars(string text1, string text2)
         {
             var lineArray = new List<string>();
@@ -225,15 +224,14 @@ namespace DiffMatchPatch
 
         }
 
-        /**
-         * Split a text into a list of strings.  Reduce the texts to a string of
-         * hashes where each Unicode character represents one line.
-         * @param text String to encode.
-         * @param lineArray List of unique strings.
-         * @param lineHash Map of strings to indices.
-         * @return Encoded string.
-         */
-
+        /// <summary>
+        /// Split a text into a list of strings.  Reduce the texts to a string of
+        /// hashes where each Unicode character represents one line.
+        /// </summary>
+        /// <param name="text">String to encode.</param>
+        /// <param name="lineArray">list of unique strings</param>
+        /// <param name="lineHash">map of strings to indices</param>
+        /// <returns>Encoded string</returns>
         private static string LinesToCharsMunge(string text, List<string> lineArray, Dictionary<string, int> lineHash)
         {
             var lineStart = 0;
@@ -267,19 +265,17 @@ namespace DiffMatchPatch
             return chars.ToString();
         }
 
-        /**
-       * Unescape selected chars for compatability with JavaScript's encodeURI.
-       * In speed critical applications this could be dropped since the
-       * receiving application will certainly decode these fine.
-       * Note that this function is case-sensitive.  Thus "%3F" would not be
-       * unescaped.  But this is ok because it is only called with the output of
-       * HttpUtility.UrlEncode which returns lowercase hex.
-       *
-       * Example: "%3f" -> "?", "%24" -> "$", etc.
-       *
-       * @param str The string to escape.
-       * @return The escaped string.
-       */
+        /// <summary>
+        /// Unescape selected chars for compatability with JavaScript's encodeURI.
+        /// In speed critical applications this could be dropped since the
+        /// receiving application will certainly decode these fine.
+        /// Note that this function is case-sensitive.  Thus "%3F" would not be
+        /// unescaped.  But this is ok because it is only called with the output of
+        /// HttpUtility.UrlEncode which returns lowercase hex.
+        /// 
+        /// Example: "%3f" -> "?", "%24" -> "$", etc.</summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
         internal static string UnescapeForEncodeUriCompatability(this string str)
         {
             return str.Replace("%21", "!").Replace("%7e", "~")
@@ -296,16 +292,15 @@ namespace DiffMatchPatch
         }
 
         //  MATCH FUNCTIONS
-
-
-        /**
-         * Locate the best instance of 'pattern' in 'text' near 'loc'.
-         * Returns -1 if no match found.
-         * @param text The text to search.
-         * @param pattern The pattern to search for.
-         * @param loc The location to search around.
-         * @return Best match index or -1.
-         */
+        
+        /// <summary>
+        /// Locate the best instance of 'pattern' in 'text' near 'loc'.
+        /// Returns -1 if no match found.
+        /// </summary>
+        /// <param name="text">Text to search</param>
+        /// <param name="pattern">pattern to search for</param>
+        /// <param name="loc">location to search around</param>
+        /// <returns>Best match index, -1 if not found</returns>
         internal static int FindBestMatchIndex(this string text, string pattern, int loc)
         {
             return FindBestMatchIndex(text, pattern, loc, MatchSettings.Default);
@@ -331,17 +326,10 @@ namespace DiffMatchPatch
                 // Perfect match at the perfect spot!  (Includes case of null pattern)
                 return loc;
             }
+
             // Do a fuzzy compare.
-            return MatchBitap(text, pattern, loc, settings);
-        }
-
-        
-
-        private static int MatchBitap(this string text, string pattern, int loc, MatchSettings settings)
-        {
             var bitap = new BitapAlgorithm(settings);
             return bitap.Match(text, pattern, loc);
-
         }
     }
 }
