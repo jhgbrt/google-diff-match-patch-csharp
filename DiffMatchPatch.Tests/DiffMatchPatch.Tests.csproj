@@ -52,12 +52,17 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="BitapAlgorithmTests.cs" />
+    <Compile Include="DiffListTests.cs" />
     <Compile Include="DiffList_CharsToLinesTests.cs" />
     <Compile Include="DiffList_CleanupEfficiencyTests.cs" />
     <Compile Include="DiffList_CleanupMergeTests.cs" />
     <Compile Include="DiffList_CleanupSemanticLosslessTests.cs" />
     <Compile Include="DiffList_CleanupSemanticTests.cs" />
-    <Compile Include="DiffMatchPatchTest.cs" />
+    <Compile Include="DiffList_ToDeltaTests.cs" />
+    <Compile Include="TextUtil_MatchPatternTests.cs" />
+    <Compile Include="Diff_ComputeTests.cs" />
+    <Compile Include="PatchTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TextUtil_LinesToCharsTests.cs" />
     <Compile Include="TextUtil_CommonOverlapTests.cs" />

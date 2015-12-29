@@ -306,11 +306,11 @@ namespace DiffMatchPatch
          * @param loc The location to search around.
          * @return Best match index or -1.
          */
-        internal static int MatchPattern(this string text, string pattern, int loc)
+        internal static int FindBestMatchIndex(this string text, string pattern, int loc)
         {
-            return MatchPattern(text, pattern, loc, MatchSettings.Default);
+            return FindBestMatchIndex(text, pattern, loc, MatchSettings.Default);
         }
-        internal static int MatchPattern(this string text, string pattern, int loc, MatchSettings settings)
+        internal static int FindBestMatchIndex(this string text, string pattern, int loc, MatchSettings settings)
         {
             // Check for null inputs not needed since null can't be passed in C#.
 

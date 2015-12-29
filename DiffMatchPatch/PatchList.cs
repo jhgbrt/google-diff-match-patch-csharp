@@ -264,11 +264,11 @@ namespace DiffMatchPatch
                 {
                     // patch_splitMax will only provide an oversized pattern
                     // in the case of a monster delete.
-                    startLoc = text.MatchPattern(text1.Substring(0, Constants.MatchMaxBits), expectedLoc, matchSettings);
+                    startLoc = text.FindBestMatchIndex(text1.Substring(0, Constants.MatchMaxBits), expectedLoc, matchSettings);
                     // Check for null inputs not needed since null can't be passed in C#.
                     if (startLoc != -1)
                     {
-                        endLoc = text.MatchPattern(
+                        endLoc = text.FindBestMatchIndex(
                             text1.Substring(text1.Length - Constants.MatchMaxBits), expectedLoc + text1.Length - Constants.MatchMaxBits, matchSettings
                             );
                         // Check for null inputs not needed since null can't be passed in C#.
@@ -281,7 +281,7 @@ namespace DiffMatchPatch
                 }
                 else
                 {
-                    startLoc = text.MatchPattern(text1, expectedLoc, matchSettings);
+                    startLoc = text.FindBestMatchIndex(text1, expectedLoc, matchSettings);
                     // Check for null inputs not needed since null can't be passed in C#.
                 }
                 if (startLoc == -1)
