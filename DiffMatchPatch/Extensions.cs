@@ -25,13 +25,21 @@ namespace DiffMatchPatch
 {
     internal static class Extensions
     {
-        // JScript splice function
         internal static List<T> Splice<T>(this List<T> input, int start, int count, params T[] objects)
         {
             IEnumerable<T> enumerable = objects;
             return input.Splice(start, count, enumerable);
         }
 
+        /// <summary>
+        /// replaces [count] entries starting at index [start] with the given [objects]
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="input"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <param name="objects"></param>
+        /// <returns>the deleted objects</returns>
         internal static List<T> Splice<T>(this List<T> input, int start, int count, IEnumerable<T> objects)
         {
             var deletedRange = input.GetRange(start, count);
@@ -40,7 +48,23 @@ namespace DiffMatchPatch
             return deletedRange;
         }
 
-        // Java substring function
+        internal static IEnumerable<string> SplitLines(this string text)
+        {
+            var lineStart = 0;
+            var lineEnd = -1;
+            while (lineEnd < text.Length - 1)
+            {
+
+                lineEnd = text.IndexOf('\n', lineStart);
+                if (lineEnd == -1)
+                {
+                    lineEnd = text.Length - 1;
+                }
+                var line = text.Substring(lineStart, lineEnd + 1 - lineStart);
+                yield return line;
+                lineStart = lineEnd + 1;
+            }
+        }
     }
 
 }

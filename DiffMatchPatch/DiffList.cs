@@ -87,8 +87,11 @@ namespace DiffMatchPatch
             var html = new StringBuilder();
             foreach (var aDiff in diffs)
             {
-                var text = aDiff.Text.Replace("&", "&amp;").Replace("<", "&lt;")
-                    .Replace(">", "&gt;").Replace("\n", "&para;<br>");
+                var text = aDiff.Text
+                    .Replace("&", "&amp;")
+                    .Replace("<", "&lt;")
+                    .Replace(">", "&gt;")
+                    .Replace("\n", "&para;<br>");
                 switch (aDiff.Operation)
                 {
                     case Operation.Insert:

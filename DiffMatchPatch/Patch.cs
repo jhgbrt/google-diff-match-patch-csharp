@@ -8,7 +8,6 @@ namespace DiffMatchPatch
     public class Patch
     {
         private List<Diff> _diffs = new List<Diff>();
-        
         public List<Diff> Diffs {get { return _diffs; }}
         public int Start1 { get; internal set; }
         public int Start2 { get; internal set; }
@@ -165,7 +164,7 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="diffs">array of diff objects for text1 to text2</param>
         /// <returns>List of Patch objects</returns>
-        public static List<Patch> Compute(List<Diff> diffs)
+        public static List<Patch> FromDiffs(List<Diff> diffs)
         {
             // Check for null inputs not needed since null can't be passed in C#.
             // No origin string provided, compute our own.

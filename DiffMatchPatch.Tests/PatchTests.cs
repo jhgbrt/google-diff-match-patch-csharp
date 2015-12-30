@@ -175,7 +175,7 @@ namespace DiffMatchPatch.Tests
             var text1 = "The quick brown fox jumps over the lazy dog.";
             var text2 = "That quick brown fox jumped over a lazy dog.";
             var diffs = Diff.Compute(text1, text2, 0, false);
-            var patches = Patch.Compute(diffs);
+            var patches = Patch.FromDiffs(diffs);
             var expectedPatch =
                 "@@ -1,11 +1,12 @@\n Th\n-e\n+at\n  quick b\n@@ -22,18 +22,17 @@\n jump\n-s\n+ed\n  over \n-the\n+a\n  laz\n";
             Assert.AreEqual(expectedPatch, patches.ToText(), "patch_make: Diff input.");

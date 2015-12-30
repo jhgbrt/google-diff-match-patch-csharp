@@ -44,9 +44,11 @@
     <Compile Include="BitapAlgorithm.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Diff.cs" />
+    <Compile Include="DiffAlgorithm.cs" />
     <Compile Include="DiffList.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HalfMatchResult.cs" />
+    <Compile Include="LineToCharCompressor.cs" />
     <Compile Include="MatchSettings.cs" />
     <Compile Include="Operation.cs" />
     <Compile Include="Patch.cs" />

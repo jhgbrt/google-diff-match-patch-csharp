@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Web;
 
 namespace DiffMatchPatch
 {
-    public static class TextUtil
+    internal static class TextUtil
     {
         /// <summary>
         /// Determine the common prefix of two strings as the number of characters common to the start of each string.
@@ -125,7 +126,7 @@ namespace DiffMatchPatch
             var bestCommon = string.Empty;
             string bestLongtextA = string.Empty, bestLongtextB = string.Empty;
             string bestShorttextA = string.Empty, bestShorttextB = string.Empty;
-            
+
             while (j < shorttext.Length && (j = shorttext.IndexOf(seed, j + 1, StringComparison.Ordinal)) != -1)
             {
                 var prefixLength = CommonPrefix(longtext.Substring(i), shorttext.Substring(j));
@@ -139,9 +140,9 @@ namespace DiffMatchPatch
                     bestShorttextB = shorttext.Substring(j + prefixLength);
                 }
             }
-            return bestCommon.Length*2 >= longtext.Length
+            return bestCommon.Length * 2 >= longtext.Length
                 ? new HalfMatchResult(bestLongtextA, bestLongtextB, bestShorttextA, bestShorttextB, bestCommon)
-                : null;
+                : HalfMatchResult.Empty;
         }
 
         /// <summary>
@@ -159,109 +160,27 @@ namespace DiffMatchPatch
             var shorttext = text1.Length > text2.Length ? text2 : text1;
             if (longtext.Length < 4 || shorttext.Length*2 < longtext.Length)
             {
-                return null; // Pointless.
+                return HalfMatchResult.Empty; // Pointless.
             }
 
             // First check if the second quarter is the seed for a half-match.
-            var hm1 = HalfMatchI(longtext, shorttext, (longtext.Length + 3)/4);
+            var hm1 = HalfMatchI(longtext, shorttext, (longtext.Length*3)/4);
             // Check again based on the third quarter.
-            var hm2 = HalfMatchI(longtext, shorttext, (longtext.Length + 1)/2);
-            
-            HalfMatchResult hm;
-            if (hm1 == null && hm2 == null)
+            var hm2 = HalfMatchI(longtext, shorttext, (longtext.Length*1)/2);
+
+            if (hm2.IsEmpty)
             {
-                return null;
-            }
-            
-            if (hm2 == null)
-            {
-                hm = hm1;
-            }
-            else if (hm1 == null)
-            {
-                hm = hm2;
-            }
-            else
-            {
-                // Both matched.  Select the longest.
-                hm = hm1.CommonMiddle.Length > hm2.CommonMiddle.Length ? hm1 : hm2;
+                return hm1;
             }
 
-            // A half-match was found, sort out the return data.
-            if (text1.Length > text2.Length)
+            if (hm1.IsEmpty)
             {
-                return hm;
+                return hm2;
             }
-            else
-            {
-                return new HalfMatchResult(hm.Prefix2, hm.Suffix2, hm.Prefix1, hm.Suffix1, hm.CommonMiddle);
-            }
-        }
+            // Both matched.  Select the longest.
+            var hm = hm1 > hm2 ? hm1 : hm2;
 
-        /// <summary>
-        /// Split two texts into a list of strings.  Reduce the texts to a string of
-        /// hashes where each Unicode character represents one line.
-        /// </summary>
-        /// <param name="text1"></param>
-        /// <param name="text2"></param>
-        /// <returns> Tuple containing the encoded text1, the
-        ///  encoded text2 and the List of unique strings.  The zeroth element
-        ///  of the List of unique strings is intentionally blank.</returns>
-        internal static Tuple<string, string, List<string>> LinesToChars(string text1, string text2)
-        {
-            var lineArray = new List<string>();
-            var lineHash = new Dictionary<string, int>();
-            // e.g. linearray[4] == "Hello\n"
-            // e.g. linehash.get("Hello\n") == 4
-
-            // "\x00" is a valid character, but various debuggers don't like it.
-            // So we'll insert a junk entry to avoid generating a null character.
-            lineArray.Add(string.Empty);
-
-            var chars1 = LinesToCharsMunge(text1, lineArray, lineHash);
-            var chars2 = LinesToCharsMunge(text2, lineArray, lineHash);
-            return Tuple.Create(chars1, chars2, lineArray);
-
-        }
-
-        /// <summary>
-        /// Split a text into a list of strings.  Reduce the texts to a string of
-        /// hashes where each Unicode character represents one line.
-        /// </summary>
-        /// <param name="text">String to encode.</param>
-        /// <param name="lineArray">list of unique strings</param>
-        /// <param name="lineHash">map of strings to indices</param>
-        /// <returns>Encoded string</returns>
-        private static string LinesToCharsMunge(string text, List<string> lineArray, Dictionary<string, int> lineHash)
-        {
-            var lineStart = 0;
-            var lineEnd = -1;
-            var chars = new StringBuilder();
-            // Walk the text, pulling out a Substring for each line.
-            // text.split('\n') would would temporarily double our memory footprint.
-            // Modifying text would create many large strings to garbage collect.
-            while (lineEnd < text.Length - 1)
-            {
-                lineEnd = text.IndexOf('\n', lineStart);
-                if (lineEnd == -1)
-                {
-                    lineEnd = text.Length - 1;
-                }
-                var line = text.Substring(lineStart, lineEnd + 1 - lineStart);
-                lineStart = lineEnd + 1;
-
-                if (lineHash.ContainsKey(line))
-                {
-                    chars.Append((char)lineHash[line]);
-                }
-                else
-                {
-                    lineArray.Add(line);
-                    lineHash.Add(line, lineArray.Count - 1);
-                    chars.Append((char)(lineArray.Count - 1));
-                }
-            }
-            return chars.ToString();
+            return hm;
         }
 
         /// <summary>

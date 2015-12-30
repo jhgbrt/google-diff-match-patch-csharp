@@ -254,7 +254,7 @@ namespace DiffMatchPatch
             // positions 10 and 20, but the first patch was found at 12, delta is 2
             // and the second patch has an effective expected position of 22.
             var delta = 0;
-            var results = new bool[patches.Count];
+            var results = new bool[patches.Count]; 
             foreach (var aPatch in patches)
             {
                 var expectedLoc = aPatch.Start2 + delta;

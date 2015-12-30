@@ -135,7 +135,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Delete("t"),
                 Diff.Insert("p")
             };
-            CollectionAssert.AreEqual(diffs, Diff.MyersDiffBisect(a, b, new CancellationToken(), false));
+            CollectionAssert.AreEqual(diffs, DiffAlgorithm.MyersDiffBisect(a, b, new CancellationToken(), false));
         }
 
 
@@ -146,7 +146,7 @@ namespace DiffMatchPatch.Tests
             var b = "map";
 
             var diffs = new List<Diff> { Diff.Delete("cat"), Diff.Insert("map") };
-            CollectionAssert.AreEqual(diffs, Diff.MyersDiffBisect(a, b, new CancellationToken(true), true));
+            CollectionAssert.AreEqual(diffs, DiffAlgorithm.MyersDiffBisect(a, b, new CancellationToken(true), true));
         }
     }
 }

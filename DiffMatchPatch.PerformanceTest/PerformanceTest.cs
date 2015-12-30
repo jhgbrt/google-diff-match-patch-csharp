@@ -16,20 +16,24 @@ namespace DiffMatchPatch.PerformanceTest
         }
 
         [TestMethod]
-        [Ignore]
         public void TestPerformance()
         {
             var oldText = File.ReadAllText("left.txt");
             var newText = File.ReadAllText("right.txt");
             List<Diff> diff;
             diff = Diff.Compute(oldText, newText, 5);
-
+            diff.CleanupEfficiency();
+            diff.CleanupSemantic();
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < 1; i++)
             {
                 diff = Diff.Compute(oldText, newText, 5);
+                diff.CleanupEfficiency();
+                diff.CleanupSemantic();
             }
-            Console.WriteLine(sw.ElapsedMilliseconds);
+            var patched = Patch.FromDiffs(diff).Apply(oldText);
+            var elapsed = sw.ElapsedMilliseconds;
+            Console.WriteLine(elapsed);
             //var fileName = Path.ChangeExtension(Path.GetTempFileName(), "html");
             //File.WriteAllText(fileName, diff.PrettyHtml());
             //Process.Start(fileName);

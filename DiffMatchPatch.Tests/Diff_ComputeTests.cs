@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DiffMatchPatch.Tests
@@ -164,9 +165,20 @@ namespace DiffMatchPatch.Tests
         }
 
         [TestMethod]
+        public void Compute_WithHalfMatch()
+        {
+            var timeout = 5f;
+            var a = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit, \r\nsed diam nonummy nibh euismod tincidunt ut laoreet dolore magna \r\naliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci \r\ntation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. \r\nDuis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie \r\nconsequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan\r\net iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore \r\nte feugait nulla facilisi. Nam liber tempor cum soluta nobis eleifend option congue nihil \r\nimperdiet doming id quod mazim placerat facer possim assum. Typi non habent claritatem insitam; \r\nest usus legentis in iis qui facit eorum claritatem. Investigationes demonstraverunt lectores \r\nlegere me lius quod ii legunt saepius. Claritas est etiam processus dynamicus, qui sequitur\r\nmutationem consuetudium lectorum. Mirum est notare quam littera gothica, quam nunc putamus \r\nparum claram, anteposuerit litterarum formas humanitatis per seacula quarta decima et quinta \r\ndecima. Eodem modo typi, qui nunc nobis videntur parum clari, fiant sollemnes in futurum.";
+            var b = "Lorem ipsum dolor sit amet, adipiscing elit, \r\nsed diam nonummy nibh euismod tincidunt ut laoreet dolore vobiscum magna \r\naliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci \r\ntation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. \r\nDuis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie \r\nconsequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan\r\net iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore \r\nte feugait nulla facilisi. Nam liber tempor cum soluta nobis eleifend option congue nihil \r\nimperdiet doming id quod mazim placerat facer possim assum. Typi non habent claritatem insitam; \r\nest usus legentis in iis qui facit eorum claritatem. Investigationes demonstraverunt lectores \r\nlegere me lius quod ii legunt saepius. Claritas est etiam processus dynamicus, qui sequitur\r\nmutationem consuetudium lectorum. Mirum est notare quam littera gothica, putamus \r\nparum claram, anteposuerit litterarum formas humanitatis per seacula quarta decima et quinta \r\ndecima. Eodem modo typi, qui nunc nobis videntur parum clari, fiant sollemnes in futurum.";;
+            var collection = Diff.Compute(a,b, 5);
+            var p = Patch.FromDiffs(collection);
+            var result = p.Apply(a);
+            Assert.AreEqual(b, result.Item1);
+        }
+
+        [TestMethod]
         public void Timeout()
         {
-            var timeoutInSeconds = 0.1f; // 100ms
             var a =
                 "`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n";
             var b =
@@ -177,15 +189,16 @@ namespace DiffMatchPatch.Tests
                 a = a + a;
                 b = b + b;
             }
+            var timeout = TimeSpan.FromMilliseconds(100);
+
+            var cts = new CancellationTokenSource(timeout);
+
             var stopWatch = Stopwatch.StartNew();
-            Diff.Compute(a, b, timeoutInSeconds);
+            Diff.Compute(a, b, false, cts.Token, false);
             var elapsed = stopWatch.Elapsed;
-            // Test that we took at least the timeout period.
-            Assert.IsTrue(TimeSpan.FromSeconds(timeoutInSeconds) <= elapsed);
-            // Test that we didn't take forever (be forgiving).
-            // Theoretically this test could fail very occasionally if the
-            // OS task swaps or locks up for a second at the wrong moment.
-            Assert.IsTrue(TimeSpan.FromSeconds(timeoutInSeconds * 2) > elapsed);
+            // assert that elapsed time is between timeout and 2*timeout (be forgiving)
+            Assert.IsTrue(timeout <= elapsed.Add(TimeSpan.FromMilliseconds(1)), string.Format("Expected timeout < elapsed. Elapsed = {0}, Timeout = {1}.", elapsed, timeout));
+            Assert.IsTrue(TimeSpan.FromTicks(2*timeout.Ticks) > elapsed);
         }
 
         [TestMethod]
