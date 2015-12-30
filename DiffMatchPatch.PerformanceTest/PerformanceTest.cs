@@ -9,7 +9,14 @@ namespace DiffMatchPatch.PerformanceTest
     [TestClass]
     public class PerformanceTest
     {
+        public static void Main()
+        {
+            var t = new PerformanceTest();
+            t.TestPerformance();
+        }
+
         [TestMethod]
+        [Ignore]
         public void TestPerformance()
         {
             var oldText = File.ReadAllText("left.txt");
@@ -18,9 +25,9 @@ namespace DiffMatchPatch.PerformanceTest
             diff = Diff.Compute(oldText, newText, 5);
 
             var sw = Stopwatch.StartNew();
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 1; i++)
             {
-                diff = Diff.Compute(oldText, newText);
+                diff = Diff.Compute(oldText, newText, 5);
             }
             Console.WriteLine(sw.ElapsedMilliseconds);
             //var fileName = Path.ChangeExtension(Path.GetTempFileName(), "html");
