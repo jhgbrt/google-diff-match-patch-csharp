@@ -31,7 +31,7 @@ namespace DiffMatchPatch.PerformanceTest
                 diff.CleanupEfficiency();
                 diff.CleanupSemantic();
             }
-            var patched = Patch.FromDiffs(diff).Apply(oldText);
+            //var patched = Patch.FromDiffs(diff).Apply(oldText);
             var elapsed = sw.ElapsedMilliseconds;
             Console.WriteLine(elapsed);
             //var fileName = Path.ChangeExtension(Path.GetTempFileName(), "html");
