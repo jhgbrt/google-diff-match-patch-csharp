@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -176,15 +177,15 @@ namespace DiffMatchPatch.Tests
                 a = a + a;
                 b = b + b;
             }
-            var startTime = DateTime.Now;
+            var stopWatch = Stopwatch.StartNew();
             Diff.Compute(a, b, timeoutInSeconds);
-            var endTime = DateTime.Now;
+            var elapsed = stopWatch.Elapsed;
             // Test that we took at least the timeout period.
-            Assert.IsTrue(new TimeSpan((long)(timeoutInSeconds * 1000) * 10000) <= endTime - startTime);
+            Assert.IsTrue(TimeSpan.FromSeconds(timeoutInSeconds) <= elapsed);
             // Test that we didn't take forever (be forgiving).
             // Theoretically this test could fail very occasionally if the
             // OS task swaps or locks up for a second at the wrong moment.
-            Assert.IsTrue(new TimeSpan((long)(timeoutInSeconds * 1000) * 10000 * 2) > endTime - startTime);
+            Assert.IsTrue(TimeSpan.FromSeconds(timeoutInSeconds * 2) > elapsed);
         }
 
         [TestMethod]

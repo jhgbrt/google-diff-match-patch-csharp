@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -56,23 +57,13 @@ namespace DiffMatchPatch
         public override bool Equals(Object obj)
         {
             var p = obj as Diff;
-            if (p == null)
-            {
-                return false;
-            }
-            return p.Operation == Operation && p.Text == Text;
+            return p != null && p.Operation == Operation && p.Text == Text;
         }
 
         public bool Equals(Diff obj)
         {
-            // If parameter is null return false.
-            if (obj == null)
-            {
-                return false;
-            }
+            return obj != null && obj.Operation == Operation && obj.Text == Text;
 
-            // Return true if the fields match.
-            return obj.Operation == Operation && obj.Text == Text;
         }
 
         public override int GetHashCode()
@@ -110,8 +101,6 @@ namespace DiffMatchPatch
                 var waitTime = TimeSpan.FromSeconds(timeoutInSeconds);
                 cts = new CancellationTokenSource(waitTime);
             }
-
-
             return Compute(text1, text2, checklines, cts.Token, optimizeForSpeed: timeoutInSeconds > 0);
         }
 
@@ -181,7 +170,9 @@ namespace DiffMatchPatch
         /// <param name="token">Cancellation token for cooperative cancellation</param>
         /// <param name="optimizeForSpeed">Should optimizations be enabled?</param>
         /// <returns></returns>
-        private static List<Diff> ComputeImpl(string text1, string text2,
+        private static List<Diff> ComputeImpl(
+            string text1, 
+            string text2,
             bool checklines, CancellationToken token, bool optimizeForSpeed)
         {
             var diffs = new List<Diff>();
@@ -229,10 +220,12 @@ namespace DiffMatchPatch
                 var result = TextUtil.HalfMatch(text1, text2);
                 if (result != null)
                 {
+                    Trace.WriteLine("half match");
                     // A half-match was found, sort out the return data.
                     // Send both pairs off for separate processing.
-                    var diffsA = Compute(result.Prefix1, result.Prefix1, checklines, token, optimizeForSpeed);
-                    var diffsB = Compute(result.Suffix1, result.Suffix2, checklines, token, optimizeForSpeed);
+                    var diffsA = Compute(result.Prefix1, result.Prefix1, checklines, token, false);
+                    var diffsB = Compute(result.Suffix1, result.Suffix2, checklines, token, false);
+
                     // Merge the results.
                     diffs = diffsA;
                     diffs.Add(Equal(result.CommonMiddle));
@@ -339,6 +332,9 @@ namespace DiffMatchPatch
             for (var x = 0; x < vLength; x++)
             {
                 v1[x] = -1;
+            }
+            for (var x = 0; x < vLength; x++)
+            {
                 v2[x] = -1;
             }
             v1[vOffset + 1] = 0;

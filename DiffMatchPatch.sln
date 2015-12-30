@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiffMatchPatch", "DiffMatchPatch\DiffMatchPatch.csproj", "{C6A55730-6B58-4D7E-AE08-1476EBD8419A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiffMatchPatch.Tests", "DiffMatchPatch.Tests\DiffMatchPatch.Tests.csproj", "{FE4EAA7A-2966-4AD7-84DF-1FCDD6C3D4C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiffMatchPatch.PerformanceTest", "DiffMatchPatch.PerformanceTest\DiffMatchPatch.PerformanceTest.csproj", "{3BAE9782-26E1-4936-97D7-B5DCEC8F3B22}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{FE4EAA7A-2966-4AD7-84DF-1FCDD6C3D4C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE4EAA7A-2966-4AD7-84DF-1FCDD6C3D4C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE4EAA7A-2966-4AD7-84DF-1FCDD6C3D4C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BAE9782-26E1-4936-97D7-B5DCEC8F3B22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BAE9782-26E1-4936-97D7-B5DCEC8F3B22}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BAE9782-26E1-4936-97D7-B5DCEC8F3B22}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BAE9782-26E1-4936-97D7-B5DCEC8F3B22}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
