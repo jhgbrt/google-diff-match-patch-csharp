@@ -89,18 +89,13 @@ namespace DiffMatchPatch
         /// <returns></returns>
         public static List<Diff> Compute(string text1, string text2, float timeoutInSeconds = 0f, bool checklines = true)
         {
-            CancellationTokenSource cts;
-            if (timeoutInSeconds <= 0)
+            using (var cts = timeoutInSeconds <= 0 
+                ? new CancellationTokenSource() 
+                : new CancellationTokenSource(TimeSpan.FromSeconds(timeoutInSeconds))
+                )
             {
-                cts = new CancellationTokenSource();
+                return Compute(text1, text2, checklines, cts.Token, timeoutInSeconds > 0);
             }
-            else
-            {
-                var waitTime = TimeSpan.FromSeconds(timeoutInSeconds);
-                cts = new CancellationTokenSource(waitTime);
-            }
-            
-            return Compute(text1, text2, checklines, cts.Token, timeoutInSeconds > 0);
         }
 
         public static List<Diff> Compute(string text1, string text2, bool checkLines, CancellationToken token, bool optimizeForSpeed)
