@@ -16,7 +16,7 @@ namespace DiffMatchPatch
         /// <returns></returns>
         private static List<Patch> DeepCopy(this IEnumerable<Patch> patches)
         {
-            return (from p in patches select p.Copy()).ToList();
+            return patches.Select(p => p.Copy()).ToList();
         }
 
         /// <summary>
@@ -111,103 +111,79 @@ namespace DiffMatchPatch
         /// <summary>
         /// Parse a textual representation of patches and return a List of Patch
         /// objects.</summary>
-        /// <param name="textline"></param>
+        /// <param name="text"></param>
         /// <returns></returns>
-        public static List<Patch> Parse(string textline)
+        public static List<Patch> Parse(string text)
         {
             var patches = new List<Patch>();
-            if (textline.Length == 0)
+            if (text.Length == 0)
             {
                 return patches;
             }
-            var text = textline.Split('\n');
-            var textPointer = 0;
-            while (textPointer < text.Length)
+
+            var lines = text.Split('\n');
+            var index = 0;
+            while (index < lines.Length)
             {
-                var m = PatchHeader.Match(text[textPointer]);
+                var m = PatchHeader.Match(lines[index]);
                 if (!m.Success)
                 {
-                    throw new ArgumentException("Invalid patch string: " + text[textPointer]);
+                    throw new ArgumentException("Invalid patch string: " + lines[index]);
                 }
-                var patch = new Patch();
+
+                (var start1, var length1) = m.GetStartLength(1, 2);
+                (var start2, var length2) = m.GetStartLength(3, 4);
+
+                index++;
+
+                var diffs = new List<Diff>();
+                while (index < lines.Length)
+                {
+                    if (!string.IsNullOrEmpty(lines[index]))
+                    {
+                        var sign = lines[index][0];
+                        if (sign == '@')
+                        {
+                            // Start of next patch.
+                            break;
+                        }
+                        var line = HttpUtility.UrlDecode(
+                            lines[index].Substring(1).Replace("+", "%2b"), 
+                            new UTF8Encoding(false, true)
+                            );
+                        diffs.Add(Diff.Create((Operation)sign, line));
+                    }
+                    index++;
+                }
+
+                var patch = new Patch
+                (
+                    start1,
+                    length1,
+                    start2,
+                    length2,
+                    diffs
+                );
                 patches.Add(patch);
-                patch.Start1 = Convert.ToInt32(m.Groups[1].Value);
-                if (m.Groups[2].Length == 0)
-                {
-                    patch.Start1--;
-                    patch.Length1 = 1;
-                }
-                else if (m.Groups[2].Value == "0")
-                {
-                    patch.Length1 = 0;
-                }
-                else
-                {
-                    patch.Start1--;
-                    patch.Length1 = Convert.ToInt32(m.Groups[2].Value);
-                }
-
-                patch.Start2 = Convert.ToInt32(m.Groups[3].Value);
-                if (m.Groups[4].Length == 0)
-                {
-                    patch.Start2--;
-                    patch.Length2 = 1;
-                }
-                else if (m.Groups[4].Value == "0")
-                {
-                    patch.Length2 = 0;
-                }
-                else
-                {
-                    patch.Start2--;
-                    patch.Length2 = Convert.ToInt32(m.Groups[4].Value);
-                }
-                textPointer++;
-
-                while (textPointer < text.Length)
-                {
-                    if (string.IsNullOrEmpty(text[textPointer]))
-                    {
-                        textPointer++;
-                        continue;
-                    }
-
-                    var sign = text[textPointer][0];
-                    var line = text[textPointer].Substring(1);
-                    line = line.Replace("+", "%2b");
-                    line = HttpUtility.UrlDecode(line, new UTF8Encoding(false, true));
-                    if (sign == '-')
-                    {
-                        // Deletion.
-                        patch.Diffs.Add(Diff.Delete(line));
-                    }
-                    else if (sign == '+')
-                    {
-                        // Insertion.
-                        patch.Diffs.Add(Diff.Insert(line));
-                    }
-                    else if (sign == ' ')
-                    {
-                        // Minor equality.
-                        patch.Diffs.Add(Diff.Equal(line));
-                    }
-                    else if (sign == '@')
-                    {
-                        // Start of next patch.
-                        break;
-                    }
-                    else
-                    {
-                        // WTF?
-                        throw new ArgumentException(
-                            "Invalid patch mode '" + sign + "' in: " + line);
-                    }
-                    textPointer++;
-                }
             }
             return patches;
         }
 
+        static (int start, int length) GetStartLength(this Match m, int startIndex, int lengthIndex)
+        {
+            var lengthStr = m.Groups[lengthIndex].Value;
+            var value = Convert.ToInt32(m.Groups[startIndex].Value);
+            switch (lengthStr)
+            {
+                case "0":
+                    return (value, 0);
+                case "":
+                    return (value - 1, 1);
+                default:
+                    return (value - 1, Convert.ToInt32(lengthStr));
+            }
+        }
+        
         /// <summary>
         /// Merge a set of patches onto the text.  Return a patched text, as well
         /// as an array of true/false values indicating which patches were applied.</summary>
