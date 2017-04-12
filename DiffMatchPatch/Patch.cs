@@ -7,6 +7,15 @@ namespace DiffMatchPatch
 {
     public class Patch
     {
+        public Patch() { }
+        public Patch(int start1, int length1, int start2, int length2, IReadOnlyCollection<Diff> diffs)
+        {
+            Start1 = start1;
+            Start2 = start2;
+            Length1 = length1;
+            Length2 = length2;
+            _diffs = diffs.ToList();
+        }
         private List<Diff> _diffs = new List<Diff>();
         public List<Diff> Diffs {get { return _diffs; }}
         public int Start1 { get; internal set; }
@@ -78,13 +87,13 @@ namespace DiffMatchPatch
         internal Patch Copy()
         {
             var patchCopy = new Patch
-            {
-                Start1 = Start1,
-                Start2 = Start2,
-                Length1 = Length1,
-                Length2 = Length2,
-                _diffs = (from d in Diffs select d.Copy()).ToList()
-            };
+            (
+                Start1,
+                Length1,
+                Start2,
+                Length2,
+                Diffs.Select(d => d.Copy()).ToList()
+            );
             return patchCopy;
         }
 

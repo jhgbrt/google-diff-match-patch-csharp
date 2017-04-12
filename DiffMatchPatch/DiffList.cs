@@ -138,7 +138,7 @@ namespace DiffMatchPatch
 
         /// <summary>
         /// Given the original text1, and an encoded string which describes the
-        /// operations required to transform text1 into text2, comAdde the full diff.
+        /// operations required to transform text1 into text2, compute the full diff.
         /// </summary>
         /// <param name="text1">Source string for the diff.</param>
         /// <param name="delta">Delta text.</param>
@@ -147,7 +147,7 @@ namespace DiffMatchPatch
         {
             var diffs = new List<Diff>();
             var pointer = 0;  // Cursor in text1
-            var tokens = delta.Split(new[] { "\t" },
+            var tokens = delta.Split(new[] { "\t" }, 
                 StringSplitOptions.None);
             foreach (var token in tokens)
             {

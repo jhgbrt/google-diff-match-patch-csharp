@@ -8,12 +8,12 @@ namespace DiffMatchPatch
         /// perfection, 1.0 = very loose).  Note that Match_Threshold controls
         /// how closely the end points of a delete need to match.
         /// </summary>
-        public float PatchDeleteThreshold { get; private set; }
+        public float PatchDeleteThreshold { get; }
 
         /// <summary>
         /// Chunk size for context length.
         /// </summary>
-        public short PatchMargin { get; private set; }
+        public short PatchMargin { get; }
 
         /// <summary>
         /// 
@@ -28,8 +28,6 @@ namespace DiffMatchPatch
             PatchMargin = patchMargin;
         }
 
-        private static readonly PatchSettings _default = new PatchSettings(0.5f, 4);
-
-        public static PatchSettings Default { get { return _default; } }
+        public static PatchSettings Default { get; } = new PatchSettings(0.5f, 4);
     }
 }

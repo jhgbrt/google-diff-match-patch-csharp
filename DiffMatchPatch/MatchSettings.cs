@@ -5,14 +5,14 @@ namespace DiffMatchPatch
         /// <summary>
         /// At what point is no match declared (0.0 = perfection, 1.0 = very loose).
         /// </summary>
-        public readonly float MatchThreshold;
+        public float MatchThreshold { get; }
 
         /// <summary>
         /// How far to search for a match (0 = exact location, 1000+ = broad match).
         /// A match this many characters away from the expected location will add
         /// 1.0 to the score (0.0 is a perfect match).
         /// </summary>
-        public readonly int MatchDistance;
+        public int MatchDistance { get; }
 
         /// <summary>
         /// Constructor
@@ -28,8 +28,6 @@ namespace DiffMatchPatch
             MatchDistance = distance;
         }
 
-        private static readonly MatchSettings _default = new MatchSettings(0.5f, 1000);
-
-        public static MatchSettings Default { get { return _default; }}
+        public static MatchSettings Default { get; } = new MatchSettings(0.5f, 1000);
     }
 }
