@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 
 namespace DiffMatchPatch
@@ -171,26 +172,26 @@ namespace DiffMatchPatch
             var pointer = 0;
             var countDelete = 0;
             var countInsert = 0;
-            var textDelete = string.Empty;
-            var textInsert = string.Empty;
+            var insertBuilder = new StringBuilder();
+            var deleteBuilder = new StringBuilder();
             while (pointer < diffs.Count)
             {
                 switch (diffs[pointer].Operation)
                 {
                     case Operation.Insert:
                         countInsert++;
-                        textInsert += diffs[pointer].Text;
+                        insertBuilder.Append(diffs[pointer].Text);
                         break;
                     case Operation.Delete:
                         countDelete++;
-                        textDelete += diffs[pointer].Text;
+                        deleteBuilder.Append(diffs[pointer].Text);
                         break;
                     case Operation.Equal:
                         // Upon reaching an equality, check for prior redundancies.
                         if (countDelete >= 1 && countInsert >= 1)
                         {
                             // Delete the offending records and add the merged ones.
-                            var diffsWithinLine = Compute(textDelete, textInsert, false, token, optimizeForSpeed);
+                            var diffsWithinLine = Compute(deleteBuilder.ToString(), insertBuilder.ToString(), false, token, optimizeForSpeed);
                             var count = countDelete + countInsert;
                             var index = pointer - count;
                             diffs.Splice(index, count, diffsWithinLine);
@@ -198,8 +199,8 @@ namespace DiffMatchPatch
                         }
                         countInsert = 0;
                         countDelete = 0;
-                        textDelete = string.Empty;
-                        textInsert = string.Empty;
+                        deleteBuilder.Clear();
+                        insertBuilder.Clear();
                         break;
                 }
                 pointer++;
