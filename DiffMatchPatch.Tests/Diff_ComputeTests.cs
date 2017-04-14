@@ -13,7 +13,7 @@ namespace DiffMatchPatch.Tests
         [TestMethod]
         public void TrivialDiff()
         {
-            var diffs = new List<Diff> { };
+            var diffs = new List<Diff>();
             CollectionAssert.AreEqual(diffs, Diff.Compute("", "", 1f, false), "diff_main: Null case.");
         }
         [TestMethod]
@@ -167,9 +167,8 @@ namespace DiffMatchPatch.Tests
         [TestMethod]
         public void Compute_WithHalfMatch()
         {
-            var timeout = 5f;
             var a = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit, \r\nsed diam nonummy nibh euismod tincidunt ut laoreet dolore magna \r\naliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci \r\ntation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. \r\nDuis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie \r\nconsequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan\r\net iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore \r\nte feugait nulla facilisi. Nam liber tempor cum soluta nobis eleifend option congue nihil \r\nimperdiet doming id quod mazim placerat facer possim assum. Typi non habent claritatem insitam; \r\nest usus legentis in iis qui facit eorum claritatem. Investigationes demonstraverunt lectores \r\nlegere me lius quod ii legunt saepius. Claritas est etiam processus dynamicus, qui sequitur\r\nmutationem consuetudium lectorum. Mirum est notare quam littera gothica, quam nunc putamus \r\nparum claram, anteposuerit litterarum formas humanitatis per seacula quarta decima et quinta \r\ndecima. Eodem modo typi, qui nunc nobis videntur parum clari, fiant sollemnes in futurum.";
-            var b = "Lorem ipsum dolor sit amet, adipiscing elit, \r\nsed diam nonummy nibh euismod tincidunt ut laoreet dolore vobiscum magna \r\naliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci \r\ntation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. \r\nDuis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie \r\nconsequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan\r\net iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore \r\nte feugait nulla facilisi. Nam liber tempor cum soluta nobis eleifend option congue nihil \r\nimperdiet doming id quod mazim placerat facer possim assum. Typi non habent claritatem insitam; \r\nest usus legentis in iis qui facit eorum claritatem. Investigationes demonstraverunt lectores \r\nlegere me lius quod ii legunt saepius. Claritas est etiam processus dynamicus, qui sequitur\r\nmutationem consuetudium lectorum. Mirum est notare quam littera gothica, putamus \r\nparum claram, anteposuerit litterarum formas humanitatis per seacula quarta decima et quinta \r\ndecima. Eodem modo typi, qui nunc nobis videntur parum clari, fiant sollemnes in futurum.";;
+            var b = "Lorem ipsum dolor sit amet, adipiscing elit, \r\nsed diam nonummy nibh euismod tincidunt ut laoreet dolore vobiscum magna \r\naliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci \r\ntation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. \r\nDuis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie \r\nconsequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan\r\net iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore \r\nte feugait nulla facilisi. Nam liber tempor cum soluta nobis eleifend option congue nihil \r\nimperdiet doming id quod mazim placerat facer possim assum. Typi non habent claritatem insitam; \r\nest usus legentis in iis qui facit eorum claritatem. Investigationes demonstraverunt lectores \r\nlegere me lius quod ii legunt saepius. Claritas est etiam processus dynamicus, qui sequitur\r\nmutationem consuetudium lectorum. Mirum est notare quam littera gothica, putamus \r\nparum claram, anteposuerit litterarum formas humanitatis per seacula quarta decima et quinta \r\ndecima. Eodem modo typi, qui nunc nobis videntur parum clari, fiant sollemnes in futurum.";
             var collection = Diff.Compute(a,b, 5);
             var p = Patch.FromDiffs(collection);
             var result = p.Apply(a);
@@ -191,14 +190,15 @@ namespace DiffMatchPatch.Tests
             }
             var timeout = TimeSpan.FromMilliseconds(100);
 
-            var cts = new CancellationTokenSource(timeout);
-
-            var stopWatch = Stopwatch.StartNew();
-            Diff.Compute(a, b, false, cts.Token, false);
-            var elapsed = stopWatch.Elapsed;
-            // assert that elapsed time is between timeout and 2*timeout (be forgiving)
-            Assert.IsTrue(timeout <= elapsed.Add(TimeSpan.FromMilliseconds(1)), string.Format("Expected timeout < elapsed. Elapsed = {0}, Timeout = {1}.", elapsed, timeout));
-            Assert.IsTrue(TimeSpan.FromTicks(2*timeout.Ticks) > elapsed);
+            using (var cts = new CancellationTokenSource(timeout))
+            {
+                var stopWatch = Stopwatch.StartNew();
+                Diff.Compute(a, b, false, cts.Token, false);
+                var elapsed = stopWatch.Elapsed;
+                // assert that elapsed time is between timeout and 2*timeout (be forgiving)
+                Assert.IsTrue(timeout <= elapsed.Add(TimeSpan.FromMilliseconds(1)), string.Format("Expected timeout < elapsed. Elapsed = {0}, Timeout = {1}.", elapsed, timeout));
+                Assert.IsTrue(TimeSpan.FromTicks(2 * timeout.Ticks) > elapsed);
+            }
         }
 
         [TestMethod]

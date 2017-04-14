@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -143,9 +144,8 @@ namespace DiffMatchPatch
         /// <param name="text1">Source string for the diff.</param>
         /// <param name="delta">Delta text.</param>
         /// <returns></returns>
-        public static List<Diff> FromDelta(string text1, string delta)
+        public static IEnumerable<Diff> FromDelta(string text1, string delta)
         {
-            var diffs = new List<Diff>();
             var pointer = 0;  // Cursor in text1
             var tokens = delta.Split(new[] { "\t" }, 
                 StringSplitOptions.None);
@@ -163,9 +163,8 @@ namespace DiffMatchPatch
                 {
                     case '+':
                         // decode would change all "+" to " "
-                        param = param.Replace("+", "%2b");
-                        param = HttpUtility.UrlDecode(param, new UTF8Encoding(false, true));
-                        diffs.Add(Diff.Insert(param));
+                        param = param.Replace("+", "%2b").UrlDecoded();
+                        yield return Diff.Insert(param);
                         break;
                     case '-':
                     // Fall through.
@@ -199,11 +198,11 @@ namespace DiffMatchPatch
                         }
                         if (token[0] == '=')
                         {
-                            diffs.Add(Diff.Equal(text));
+                            yield return Diff.Equal(text);
                         }
                         else
                         {
-                            diffs.Add(Diff.Delete(text));
+                            yield return Diff.Delete(text);
                         }
                         break;
                     default:
@@ -217,7 +216,6 @@ namespace DiffMatchPatch
                 throw new ArgumentException("Delta length (" + pointer
                                             + ") smaller than source text length (" + text1.Length + ").");
             }
-            return diffs;
         }
 
         /// <summary>
@@ -231,9 +229,8 @@ namespace DiffMatchPatch
             diffs.Add(Diff.Equal(string.Empty));
             var countDelete = 0;
             var countInsert = 0;
-            var textDelete = string.Empty;
-            var textInsert = string.Empty;
-
+            var sbDelete = new StringBuilder();
+            var sbInsert = new StringBuilder();
             var pointer = 0;
             while (pointer < diffs.Count)
             {
@@ -241,12 +238,12 @@ namespace DiffMatchPatch
                 {
                     case Operation.Insert:
                         countInsert++;
-                        textInsert += diffs[pointer].Text;
+                        sbInsert.Append(diffs[pointer].Text);
                         pointer++;
                         break;
                     case Operation.Delete:
                         countDelete++;
-                        textDelete += diffs[pointer].Text;
+                        sbDelete.Append(diffs[pointer].Text);
                         pointer++;
                         break;
                     case Operation.Equal:
@@ -256,53 +253,48 @@ namespace DiffMatchPatch
                             if (countDelete != 0 && countInsert != 0)
                             {
                                 // Factor out any common prefixies.
-                                var commonlength = TextUtil.CommonPrefix(textInsert, textDelete);
+                                var commonlength = TextUtil.CommonPrefix(sbInsert, sbDelete);
                                 if (commonlength != 0)
                                 {
+                                    var commonprefix = sbInsert.ToString(0, commonlength);
+                                    sbInsert.Remove(0, commonlength);
+                                    sbDelete.Remove(0, commonlength);
                                     var index = pointer - countDelete - countInsert - 1;
                                     if (index >= 0 && diffs[index].Operation == Operation.Equal)
                                     {
-                                        diffs[index] = diffs[index].Replace(diffs[index].Text + textInsert.Substring(0, commonlength));
+                                        diffs[index] = diffs[index].Replace(diffs[index].Text + commonprefix);
                                     }
                                     else
                                     {
-                                        diffs.Insert(0, Diff.Equal(textInsert.Substring(0, commonlength)));
+                                        diffs.Insert(0, Diff.Equal(commonprefix));
                                         pointer++;
                                     }
-                                    textInsert = textInsert.Substring(commonlength);
-                                    textDelete = textDelete.Substring(commonlength);
                                 }
                                 // Factor out any common suffixies.
-                                commonlength = TextUtil.CommonSuffix(textInsert, textDelete);
+                                commonlength = TextUtil.CommonSuffix(sbInsert, sbDelete);
                                 if (commonlength != 0)
                                 {
-                                    diffs[pointer] = diffs[pointer].Replace(textInsert.Substring(textInsert.Length
-                                                                                                 - commonlength) + diffs[pointer].Text);
-                                    textInsert = textInsert.Substring(0, textInsert.Length
-                                                                         - commonlength);
-                                    textDelete = textDelete.Substring(0, textDelete.Length
-                                                                         - commonlength);
+                                    var commonsuffix = sbInsert.ToString(sbInsert.Length - commonlength, commonlength);
+                                    sbInsert.Remove(sbInsert.Length - commonlength, commonlength);
+                                    sbDelete.Remove(sbDelete.Length - commonlength, commonlength);
+                                    diffs[pointer] = diffs[pointer].Replace(commonsuffix + diffs[pointer].Text);
                                 }
                             }
                             // Delete the offending records and add the merged ones.
                             if (countDelete == 0)
                             {
-                                diffs.Splice(pointer - countInsert,
-                                    countDelete + countInsert,
-                                    Diff.Insert(textInsert));
+                                diffs.Splice(pointer - countInsert, countDelete + countInsert, Diff.Insert(sbInsert.ToString()));
                             }
                             else if (countInsert == 0)
                             {
-                                diffs.Splice(pointer - countDelete,
-                                    countDelete + countInsert,
-                                    Diff.Delete(textDelete));
+                                diffs.Splice(pointer - countDelete, countDelete + countInsert, Diff.Delete(sbDelete.ToString()));
                             }
                             else
                             {
                                 diffs.Splice(pointer - countDelete - countInsert,
                                     countDelete + countInsert,
-                                    Diff.Delete(textDelete),
-                                    Diff.Insert(textInsert));
+                                    Diff.Delete(sbDelete.ToString()),
+                                    Diff.Insert(sbInsert.ToString()));
                             }
                             pointer = pointer - countDelete - countInsert +
                                       (countDelete != 0 ? 1 : 0) + (countInsert != 0 ? 1 : 0) + 1;
@@ -320,8 +312,8 @@ namespace DiffMatchPatch
                         }
                         countInsert = 0;
                         countDelete = 0;
-                        textDelete = string.Empty;
-                        textInsert = string.Empty;
+                        sbDelete.Clear();
+                        sbInsert.Clear();
                         break;
                 }
             }

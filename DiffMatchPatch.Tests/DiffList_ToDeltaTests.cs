@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -40,7 +41,7 @@ namespace DiffMatchPatch.Tests
         {
             var delta = diffs.ToDelta();
             var result  = DiffList.FromDelta(diffs.Text1(), delta);
-            CollectionAssert.AreEqual(diffs, result);
+            CollectionAssert.AreEqual(diffs, result.ToList());
             
         }
 
@@ -50,7 +51,7 @@ namespace DiffMatchPatch.Tests
         {
             var delta = diffs.ToDelta();
             var text1 = diffs.Text1() + "x";
-            DiffList.FromDelta(text1, delta);
+            DiffList.FromDelta(text1, delta).ToList();
         }
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
@@ -58,14 +59,14 @@ namespace DiffMatchPatch.Tests
         {
             var delta = diffs.ToDelta();
             var text1 = diffs.Text1().Substring(1);
-            DiffList.FromDelta(text1, delta);
+            DiffList.FromDelta(text1, delta).ToList();
         }
 
         [TestMethod]
         [ExpectedException(typeof(DecoderFallbackException))]
         public void FromDelta_InvalidUnicodeInput_Throws()
         {
-            DiffList.FromDelta("", "+%c3%xy");
+            DiffList.FromDelta("", "+%c3%xy").ToList();
         }
         
         [TestMethod]
@@ -87,7 +88,7 @@ namespace DiffMatchPatch.Tests
             // Lowercase, due to UrlEncode uses lower.
             Assert.AreEqual("=7\t-7\t+%da%82 %02 %5c %7c", delta, "diff_toDelta: Unicode.");
 
-            CollectionAssert.AreEqual(diffs, DiffList.FromDelta(text1, delta), "diff_fromDelta: Unicode.");
+            CollectionAssert.AreEqual(diffs, DiffList.FromDelta(text1, delta).ToList(), "diff_fromDelta: Unicode.");
         }
 
 
@@ -107,7 +108,7 @@ namespace DiffMatchPatch.Tests
 
             // Convert delta string into a diff.
             var actual = DiffList.FromDelta("", delta);
-            CollectionAssert.AreEqual(expected, actual, "diff_fromDelta: Unchanged characters.");
+            CollectionAssert.AreEqual(expected, actual.ToList(), "diff_fromDelta: Unchanged characters.");
         }
 
     }

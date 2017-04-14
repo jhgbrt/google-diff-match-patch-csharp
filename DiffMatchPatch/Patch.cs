@@ -118,14 +118,14 @@ namespace DiffMatchPatch
                    && pattern.Length < Constants.MatchMaxBits - patchMargin - patchMargin)
             {
                 padding += patchMargin;
-                int begin = Math.Max(0, Start2 - padding);
+                var begin = Math.Max(0, Start2 - padding);
                 pattern = text.Substring(begin, Math.Min(text.Length, Start2 + Length1 + padding) - begin);
             }
             // Add one chunk for good luck.
             padding += patchMargin;
 
             // Add the prefix.
-            int begin1 = Math.Max(0, Start2 - padding);
+            var begin1 = Math.Max(0, Start2 - padding);
             var prefix = text.Substring(begin1, Start2 - begin1);
             if (prefix.Length != 0)
             {
@@ -229,7 +229,7 @@ namespace DiffMatchPatch
                         break;
                     case Operation.Equal:
                         if (aDiff.Text.Length <= 2 * patchMargin
-                            && patch.Diffs.Count() != 0 && aDiff != diffs.Last())
+                            && patch.Diffs.Count != 0 && aDiff != diffs.Last())
                         {
                             // Small equality inside a patch.
                             patch.Diffs.Add(aDiff);

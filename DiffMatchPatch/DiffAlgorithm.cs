@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace DiffMatchPatch
 {
-    class DiffAlgorithm
+    static class DiffAlgorithm
     {
 
         /// <summary>

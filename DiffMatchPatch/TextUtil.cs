@@ -28,6 +28,19 @@ namespace DiffMatchPatch
             return n;
         }
 
+        internal static int CommonPrefix(StringBuilder text1, StringBuilder text2)
+        {
+            // Performance analysis: http://neil.fraser.name/news/2007/10/09/
+            var n = Math.Min(text1.Length, text2.Length);
+            for (var i = 0; i < n; i++)
+            {
+                if (text1[i] != text2[i])
+                {
+                    return i;
+                }
+            }
+            return n;
+        }
         /// <summary>
         /// Determine the common suffix of two strings as the number of characters common to the end of each string.
         /// </summary>
@@ -35,6 +48,21 @@ namespace DiffMatchPatch
         /// <param name="text2"></param>
         /// <returns>The number of characters common to the end of each string.</returns>
         internal static int CommonSuffix(string text1, string text2)
+        {
+            // Performance analysis: http://neil.fraser.name/news/2007/10/09/
+            var text1Length = text1.Length;
+            var text2Length = text2.Length;
+            var n = Math.Min(text1.Length, text2.Length);
+            for (var i = 1; i <= n; i++)
+            {
+                if (text1[text1Length - i] != text2[text2Length - i])
+                {
+                    return i - 1;
+                }
+            }
+            return n;
+        }
+        internal static int CommonSuffix(StringBuilder text1, StringBuilder text2)
         {
             // Performance analysis: http://neil.fraser.name/news/2007/10/09/
             var text1Length = text1.Length;
@@ -207,6 +235,14 @@ namespace DiffMatchPatch
         internal static string UrlEncoded(this string str)
         {
             return HttpUtility.UrlEncode(str, new UTF8Encoding());
+        }
+
+        internal static string UrlDecoded(this string str)
+        {
+            return HttpUtility.UrlDecode(
+                            str,
+                            new UTF8Encoding(false, true)
+                            );
         }
 
         //  MATCH FUNCTIONS

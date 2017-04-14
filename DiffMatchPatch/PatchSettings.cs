@@ -16,7 +16,7 @@ namespace DiffMatchPatch
         public short PatchMargin { get; }
 
         /// <summary>
-        /// 
+        /// Constructor
         /// </summary>
         /// <param name="patchDeleteTreshold"> How far to search for a match (0 = exact location, 1000+ = broad match).
         /// A match this many characters away from the expected location will add

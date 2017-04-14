@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DiffMatchPatch.Tests
@@ -33,6 +34,30 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("BBB\r\nDDD\r\n\r\n"),
                 Diff.Equal("BBB\r\nEEE")
             }, diffs);
+        }
+
+        [TestMethod]
+        public void NoCleanup()
+        {
+            // Line boundaries.
+            var diffs = new List<Diff>
+            {
+                Diff.Equal("AAA\r\n"),
+                Diff.Insert("BBB DDD\r\n"),
+                Diff.Equal("BBB EEE\r\n"),
+                Diff.Insert("FFF GGG\r\n"),
+                Diff.Equal("HHH III"),
+            };
+            diffs.CleanupSemanticLossless();
+            CollectionAssert.AreEqual(new List<Diff>
+            {
+                Diff.Equal("AAA\r\n"),
+                Diff.Insert("BBB DDD\r\n"),
+                Diff.Equal("BBB EEE\r\n"),
+                Diff.Insert("FFF GGG\r\n"),
+                Diff.Equal("HHH III"),
+            }, diffs);
+
         }
 
         [TestMethod]

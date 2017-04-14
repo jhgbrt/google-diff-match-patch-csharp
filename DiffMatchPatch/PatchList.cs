@@ -147,10 +147,7 @@ namespace DiffMatchPatch
                             // Start of next patch.
                             break;
                         }
-                        var line = HttpUtility.UrlDecode(
-                            lines[index].Substring(1).Replace("+", "%2b"), 
-                            new UTF8Encoding(false, true)
-                            );
+                        var line = lines[index].Substring(1).Replace("+", "%2b").UrlDecoded();
                         diffs.Add(Diff.Create((Operation)sign, line));
                     }
                     index++;
