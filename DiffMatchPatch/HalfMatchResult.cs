@@ -76,5 +76,10 @@ namespace DiffMatchPatch
         {
             return left.CommonMiddle.Length < right.CommonMiddle.Length;
         }
+
+        public override string ToString()
+        {
+            return $"[{Prefix1}/{Prefix2}] - {CommonMiddle} - [{Suffix1}/{Suffix2}]";
+        }
     }
 }

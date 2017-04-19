@@ -21,22 +21,21 @@ namespace DiffMatchPatch
         /// <returns></returns>
         public static List<Diff> Compute(string text1, string text2, bool checklines, CancellationToken token, bool optimizeForSpeed)
         {
-            // Check for null inputs not needed since null can't be passed in C#.
+            if (text1.Length == text2.Length && text1.Length == 0)
+                return new List<Diff>();
 
-            // Check for equality (speedup).
-            List<Diff> diffs;
-            if (text1 == text2)
+            var commonlength = TextUtil.CommonPrefix(text1, text2);
+
+            if (commonlength == text1.Length && commonlength == text2.Length)
             {
-                diffs = new List<Diff>();
-                if (text1.Length != 0)
+                // equal
+                return new List<Diff>()
                 {
-                    diffs.Add(Diff.Equal(text1));
-                }
-                return diffs;
+                    Diff.Equal(text1)
+                };
             }
 
             // Trim off common prefix (speedup).
-            var commonlength = TextUtil.CommonPrefix(text1, text2);
             var commonprefix = text1.Substring(0, commonlength);
             text1 = text1.Substring(commonlength);
             text2 = text2.Substring(commonlength);
@@ -48,7 +47,7 @@ namespace DiffMatchPatch
             text2 = text2.Substring(0, text2.Length - commonlength);
 
             // Compute the diff on the middle block.
-            diffs = ComputeImpl(text1, text2, checklines, token, optimizeForSpeed);
+            var diffs = ComputeImpl(text1, text2, checklines, token, optimizeForSpeed);
 
             // Restore the prefix and suffix.
             if (commonprefix.Length != 0)

@@ -2,22 +2,36 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DiffMatchPatch.Tests
 {
-
+    [TestClass]
     public class TextUtilHalfMatchTests
     {
+        [TestMethod]
+        public void WhenLeftIsEmptyReturnsEmpty()
+        {
+            var result = TextUtil.HalfMatch("", "12345");
+            Assert.IsTrue(result.IsEmpty);
+        }
+
+        [TestMethod]
+        public void WhenRightIsEmptyReturnsEmpty()
+        {
+            var result = TextUtil.HalfMatch("12345", "");
+            Assert.IsTrue(result.IsEmpty);
+        }
+
         [TestMethod]
         public void WhenTextDoesNotMatchReturnsNull()
         {
             // No match.
             var result = TextUtil.HalfMatch("1234567890", "abcdef");
-            Assert.IsNull(result);
+            Assert.IsTrue(result.IsEmpty);
         }
 
         [TestMethod]
         public void WhenSubstringIsLessThanHalfTheOriginalStringReturnsNull()
         {
             var result = TextUtil.HalfMatch("12345", "23");
-            Assert.IsNull(result);
+            Assert.IsTrue(result.IsEmpty);
         }
 
         [TestMethod]

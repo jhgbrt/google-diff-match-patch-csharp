@@ -18,7 +18,7 @@ namespace DiffMatchPatch
         /// Constructor
         /// </summary>
         /// <param name="treshold">At what point is no match declared (0.0 = perfection, 1.0 = very loose).</param>
-        /// <param name="distance"> How far to search for a match (0 = exact location, 1000+ = broad match). 
+        /// <param name="distance"> How far to search for a match (0 = exact location, 1000+ = broad match).
         /// A match this many characters away from the expected location will add
         /// 1.0 to the score (0.0 is a perfect match).
         /// </param>

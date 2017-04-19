@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Web;
 
 namespace DiffMatchPatch
 {
@@ -77,7 +75,15 @@ namespace DiffMatchPatch
             levenshtein += Math.Max(insertions, deletions);
             return levenshtein;
         }
+        private static StringBuilder AppendHtml(this StringBuilder sb, string tag, string backgroundColor, string content)
+        {
+            var openingTag = string.IsNullOrEmpty(backgroundColor) ? $"<{tag}>" : $"<{tag} style=\"background:{backgroundColor};\">";
 
+            return sb
+                .Append(openingTag)
+                .Append(content)
+                .Append($"</{tag}>");
+        }
         /// <summary>
         /// Convert a Diff list into a pretty HTML report.
         /// </summary>
@@ -88,27 +94,48 @@ namespace DiffMatchPatch
             var html = new StringBuilder();
             foreach (var aDiff in diffs)
             {
-                var text = aDiff.Text
+                var text = new StringBuilder(aDiff.Text)
                     .Replace("&", "&amp;")
                     .Replace("<", "&lt;")
                     .Replace(">", "&gt;")
-                    .Replace("\n", "&para;<br>");
+                    .Replace("\n", "&para;<br>")
+                    .ToString();
+
                 switch (aDiff.Operation)
                 {
                     case Operation.Insert:
-                        html.Append("<ins style=\"background:#e6ffe6;\">").Append(text)
-                            .Append("</ins>");
+                        html.AppendHtml("ins", "#e6ffe6", text);
                         break;
                     case Operation.Delete:
-                        html.Append("<del style=\"background:#ffe6e6;\">").Append(text)
-                            .Append("</del>");
+                        html.AppendHtml("del", "#ffe6e6", text);
                         break;
                     case Operation.Equal:
-                        html.Append("<span>").Append(text).Append("</span>");
+                        html.AppendHtml("span", "", text);
                         break;
                 }
             }
             return html.ToString();
+        }
+
+        static char ToDelta(this Operation o)
+        {
+            switch (o)
+            {
+                case Operation.Delete: return '-';
+                case Operation.Insert: return '+';
+                case Operation.Equal: return '=';
+                default: throw new ArgumentException($"Unknown Operation: {o}");
+            }
+        }
+        static Operation FromDelta(char c)
+        {
+            switch (c)
+            {
+                case '-': return Operation.Delete;
+                case '+': return Operation.Insert;
+                case '=': return Operation.Equal;
+                default: throw new ArgumentException($"Invalid Delta Token: {c}");
+            }
         }
 
         /// <summary>
@@ -124,14 +151,11 @@ namespace DiffMatchPatch
         {
             var s =
                 from aDiff in diffs
-                let sign = aDiff.Operation == Operation.Insert
-                    ? "+" : aDiff.Operation == Operation.Delete
-                        ? "-"
-                        : "="
+                let sign = aDiff.Operation.ToDelta()
                 let textToAppend = aDiff.Operation == Operation.Insert
                     ? aDiff.Text.UrlEncoded().Replace('+', ' ')
                     : aDiff.Text.Length.ToString()
-                select sign + textToAppend;
+                select string.Concat(sign, textToAppend);
 
             var delta = string.Join("\t", s).UnescapeForEncodeUriCompatability();
             return delta;
@@ -147,8 +171,9 @@ namespace DiffMatchPatch
         public static IEnumerable<Diff> FromDelta(string text1, string delta)
         {
             var pointer = 0;  // Cursor in text1
-            var tokens = delta.Split(new[] { "\t" }, 
-                StringSplitOptions.None);
+
+            var tokens = delta.Split(new[] { "\t" },  StringSplitOptions.None);
+
             foreach (var token in tokens)
             {
                 if (token.Length == 0)
@@ -159,62 +184,36 @@ namespace DiffMatchPatch
                 // Each token begins with a one character parameter which specifies the
                 // operation of this token (delete, insert, equality).
                 var param = token.Substring(1);
-                switch (token[0])
+                var operation = FromDelta(token[0]);
+                string text;
+                switch (operation)
                 {
-                    case '+':
+                    case Operation.Insert:
                         // decode would change all "+" to " "
-                        param = param.Replace("+", "%2b").UrlDecoded();
-                        yield return Diff.Insert(param);
+                        text = param.Replace("+", "%2b").UrlDecoded();
                         break;
-                    case '-':
-                    // Fall through.
-                    case '=':
-                        int n;
-                        try
+                    case Operation.Delete:
+                    case Operation.Equal:
+                        if (!int.TryParse(param, out int n))
                         {
-                            n = Convert.ToInt32(param);
+                            throw new ArgumentException($"Invalid number in Diff.FromDelta: {param}");
                         }
-                        catch (FormatException e)
+                        if (pointer < 0 || n < 0 || pointer > text1.Length - n)
                         {
-                            throw new ArgumentException(
-                                "Invalid number in diff_fromDelta: " + param, e);
+                            throw new ArgumentException($"Delta length ({pointer}) larger than source text length ({text1.Length}).");
                         }
-                        if (n < 0)
-                        {
-                            throw new ArgumentException(
-                                "Negative number in diff_fromDelta: " + param);
-                        }
-                        string text;
-                        try
-                        {
-                            text = text1.Substring(pointer, n);
-                            pointer += n;
-                        }
-                        catch (ArgumentOutOfRangeException e)
-                        {
-                            throw new ArgumentException("Delta length (" + pointer
-                                                        + ") larger than source text length (" + text1.Length
-                                                        + ").", e);
-                        }
-                        if (token[0] == '=')
-                        {
-                            yield return Diff.Equal(text);
-                        }
-                        else
-                        {
-                            yield return Diff.Delete(text);
-                        }
+
+                        text = text1.Substring(pointer, n);
+                        pointer += n;
+
                         break;
-                    default:
-                        // Anything else is an error.
-                        throw new ArgumentException(
-                            "Invalid diff operation in diff_fromDelta: " + token[0]);
+                    default: throw new ArgumentException($"Unknown Operation: {operation}");
                 }
+                yield return Diff.Create(operation, text);
             }
             if (pointer != text1.Length)
             {
-                throw new ArgumentException("Delta length (" + pointer
-                                            + ") smaller than source text length (" + text1.Length + ").");
+                throw new ArgumentException($"Delta length ({pointer}) smaller than source text length ({text1.Length}).");
             }
         }
 
@@ -326,39 +325,33 @@ namespace DiffMatchPatch
             // equalities which can be shifted sideways to eliminate an equality.
             // e.g: A<ins>BA</ins>C -> <ins>AB</ins>AC
             var changes = false;
-            pointer = 1;
             // Intentionally ignore the first and last element (don't need checking).
-            while (pointer < diffs.Count - 1)
+            for (var i = 1;  i < diffs.Count - 1; i++)
             {
-                if (diffs[pointer - 1].Operation == Operation.Equal &&
-                    diffs[pointer + 1].Operation == Operation.Equal)
+                var previous = diffs[i - 1];
+                var current = diffs[i];
+                var next = diffs[i + 1];
+                if (previous.Operation == Operation.Equal && next.Operation == Operation.Equal)
                 {
                     // This is a single edit surrounded by equalities.
-                    if (diffs[pointer].Text.EndsWith(diffs[pointer - 1].Text,
-                        StringComparison.Ordinal))
+                    if (current.Text.EndsWith(previous.Text, StringComparison.Ordinal))
                     {
                         // Shift the edit over the previous equality.
-                        var text = diffs[pointer - 1].Text +
-                                   diffs[pointer].Text.Substring(0, diffs[pointer].Text.Length -
-                                                                    diffs[pointer - 1].Text.Length);
-                        diffs[pointer] = diffs[pointer].Replace(text);
-                        diffs[pointer + 1] = diffs[pointer + 1].Replace(diffs[pointer - 1].Text
-                                                                        + diffs[pointer + 1].Text);
-                        diffs.Splice(pointer - 1, 1);
+                        var text = previous.Text + current.Text.Substring(0, current.Text.Length - previous.Text.Length);
+                        diffs[i] = current.Replace(text);
+                        diffs[i + 1] = next.Replace(previous.Text + next.Text);
+                        diffs.Splice(i - 1, 1);
                         changes = true;
                     }
-                    else if (diffs[pointer].Text.StartsWith(diffs[pointer + 1].Text,
-                        StringComparison.Ordinal))
+                    else if (current.Text.StartsWith(next.Text,StringComparison.Ordinal))
                     {
                         // Shift the edit over the next equality.
-                        diffs[pointer - 1] = diffs[pointer - 1].Replace(diffs[pointer - 1].Text + diffs[pointer + 1].Text);
-                        diffs[pointer] = diffs[pointer].Replace(diffs[pointer].Text.Substring(diffs[pointer + 1].Text.Length)
-                                                                + diffs[pointer + 1].Text);
-                        diffs.Splice(pointer + 1, 1);
+                        diffs[i - 1] = previous.Replace(previous.Text + next.Text);
+                        diffs[i] = current.Replace(current.Text.Substring(next.Text.Length) + next.Text);
+                        diffs.Splice(i + 1, 1);
                         changes = true;
                     }
                 }
-                pointer++;
             }
             // If shifts were made, the diff needs reordering and another shift sweep.
             if (changes)

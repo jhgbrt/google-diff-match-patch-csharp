@@ -16,8 +16,9 @@ namespace DiffMatchPatch
             Length2 = length2;
             _diffs = diffs.ToList();
         }
-        private List<Diff> _diffs = new List<Diff>();
-        public List<Diff> Diffs {get { return _diffs; }}
+
+        readonly List<Diff> _diffs = new List<Diff>();
+        public List<Diff> Diffs { get { return _diffs; } }
         public int Start1 { get; internal set; }
         public int Start2 { get; internal set; }
         public int Length1 { get; internal set; }
@@ -44,40 +45,30 @@ namespace DiffMatchPatch
             {
                 coords1 = Start1 + 1 + "," + Length1;
             }
-            if (Length2 == 0)
+            switch (Length2)
             {
-                coords2 = Start2 + ",0";
+                case 0:
+                    coords2 = Start2 + ",0";
+                    break;
+                case 1:
+                    coords2 = Convert.ToString(Start2 + 1);
+                    break;
+                default:
+                    coords2 = Start2 + 1 + "," + Length2;
+                    break;
             }
-            else if (Length2 == 1)
-            {
-                coords2 = Convert.ToString(Start2 + 1);
-            }
-            else
-            {
-                coords2 = Start2 + 1 + "," + Length2;
-            }
+
             var text = new StringBuilder();
             text.Append("@@ -")
                 .Append(coords1)
                 .Append(" +")
                 .Append(coords2)
                 .Append(" @@\n");
+
             // Escape the body of the patch with %xx notation.
             foreach (var aDiff in Diffs)
             {
-                switch (aDiff.Operation)
-                {
-                    case Operation.Insert:
-                        text.Append('+');
-                        break;
-                    case Operation.Delete:
-                        text.Append('-');
-                        break;
-                    case Operation.Equal:
-                        text.Append(' ');
-                        break;
-                }
-
+                text.Append((char)aDiff.Operation);
                 text.Append(aDiff.Text.UrlEncoded().Replace('+', ' ')).Append("\n");
             }
 
@@ -132,7 +123,7 @@ namespace DiffMatchPatch
                 Diffs.Insert(0, Diff.Equal(prefix));
             }
             // Add the suffix.
-            int begin2 = Start2 + Length1;
+            var begin2 = Start2 + Length1;
             var length = Math.Min(text.Length, Start2 + Length1 + padding) - begin2;
             var suffix = text.Substring(begin2, length);
             if (suffix.Length != 0)

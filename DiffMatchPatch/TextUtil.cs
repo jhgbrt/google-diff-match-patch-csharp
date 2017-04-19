@@ -239,10 +239,7 @@ namespace DiffMatchPatch
 
         internal static string UrlDecoded(this string str)
         {
-            return HttpUtility.UrlDecode(
-                            str,
-                            new UTF8Encoding(false, true)
-                            );
+            return HttpUtility.UrlDecode(str, new UTF8Encoding(false, true));
         }
 
         //  MATCH FUNCTIONS

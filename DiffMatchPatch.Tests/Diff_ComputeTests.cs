@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using static DiffMatchPatch.Diff;
 
 namespace DiffMatchPatch.Tests
 {
@@ -19,20 +20,20 @@ namespace DiffMatchPatch.Tests
         [TestMethod]
         public void Equality()
         {
-            var expected1 = new List<Diff> { Diff.Equal("abc") };
+            var expected1 = new List<Diff> { Equal("abc") };
             CollectionAssert.AreEqual(expected1, Diff.Compute("abc", "abc", 1f, false), "diff_main: Equality.");
         }
         [TestMethod]
         public void SimpleInsert()
         {
-            var expected2 = new List<Diff> { Diff.Equal("ab"), Diff.Insert("123"), Diff.Equal("c") };
+            var expected2 = new List<Diff> { Equal("ab"), Insert("123"), Equal("c") };
             CollectionAssert.AreEqual(expected2, Diff.Compute("abc", "ab123c", 1f, false), "diff_main: Simple insertion.");
         }
 
         [TestMethod]
         public void SimpleDelete()
         {
-            var expected3 = new List<Diff> { Diff.Equal("a"), Diff.Delete("123"), Diff.Equal("bc") };
+            var expected3 = new List<Diff> { Equal("a"), Delete("123"), Equal("bc") };
             CollectionAssert.AreEqual(expected3, Diff.Compute("a123bc", "abc", 1f, false), "diff_main: Simple deletion.");
         }
 
@@ -41,11 +42,11 @@ namespace DiffMatchPatch.Tests
         {
             var expected4 = new List<Diff>
             {
-                Diff.Equal("a"),
-                Diff.Insert("123"),
-                Diff.Equal("b"),
-                Diff.Insert("456"),
-                Diff.Equal("c")
+                Equal("a"),
+                Insert("123"),
+                Equal("b"),
+                Insert("456"),
+                Equal("c")
             };
             CollectionAssert.AreEqual(expected4, Diff.Compute("abc", "a123b456c", 1f, false), "diff_main: Two insertions.");
 
@@ -56,11 +57,11 @@ namespace DiffMatchPatch.Tests
         {
             var expected5 = new List<Diff>
             {
-                Diff.Equal("a"),
-                Diff.Delete("123"),
-                Diff.Equal("b"),
-                Diff.Delete("456"),
-                Diff.Equal("c")
+                Equal("a"),
+                Delete("123"),
+                Equal("b"),
+                Delete("456"),
+                Equal("c")
             };
             CollectionAssert.AreEqual(expected5, Diff.Compute("a123b456c", "abc", 1f, false), "diff_main: Two deletions.");
         }
@@ -70,7 +71,7 @@ namespace DiffMatchPatch.Tests
         {
             // Perform a real diff.
             // Switch off the timeout.
-            var expected6 = new List<Diff> { Diff.Delete("a"), Diff.Insert("b") };
+            var expected6 = new List<Diff> { Delete("a"), Insert("b") };
             CollectionAssert.AreEqual(expected6, Diff.Compute("a", "b", 0, false), "diff_main: Simple case #1.");
         }
 
@@ -79,11 +80,11 @@ namespace DiffMatchPatch.Tests
         {
             var expected7 = new List<Diff>
             {
-                Diff.Delete("Apple"),
-                Diff.Insert("Banana"),
-                Diff.Equal("s are a"),
-                Diff.Insert("lso"),
-                Diff.Equal(" fruit.")
+                Delete("Apple"),
+                Insert("Banana"),
+                Equal("s are a"),
+                Insert("lso"),
+                Equal(" fruit.")
             };
             CollectionAssert.AreEqual(expected7, Diff.Compute("Apples are a fruit.", "Bananas are also fruit.", 0, false),
                 "diff_main: Simple case #2.");
@@ -95,11 +96,11 @@ namespace DiffMatchPatch.Tests
         {
             var expected8 = new List<Diff>
             {
-                Diff.Delete("a"),
-                Diff.Insert("\u0680"),
-                Diff.Equal("x"),
-                Diff.Delete("\t"),
-                Diff.Insert(new string(new char[] {(char) 0}))
+                Delete("a"),
+                Insert("\u0680"),
+                Equal("x"),
+                Delete("\t"),
+                Insert(new string(new char[] {(char) 0}))
             };
             CollectionAssert.AreEqual(expected8, Diff.Compute("ax\t", "\u0680x" + (char)0, 0, false),
                 "diff_main: Simple case #3.");
@@ -111,12 +112,12 @@ namespace DiffMatchPatch.Tests
         {
             var expected9 = new List<Diff>
             {
-                Diff.Delete("1"),
-                Diff.Equal("a"),
-                Diff.Delete("y"),
-                Diff.Equal("b"),
-                Diff.Delete("2"),
-                Diff.Insert("xab")
+                Delete("1"),
+                Equal("a"),
+                Delete("y"),
+                Equal("b"),
+                Delete("2"),
+                Insert("xab")
             };
             CollectionAssert.AreEqual(expected9, Diff.Compute("1ayb2", "abxab", 0, false), "diff_main: Overlap #1.");
         }
@@ -125,7 +126,7 @@ namespace DiffMatchPatch.Tests
         [TestMethod]
         public void DiffWithOverlap2()
         {
-            var expected10 = new List<Diff> { Diff.Insert("xaxcx"), Diff.Equal("abc"), Diff.Delete("y") };
+            var expected10 = new List<Diff> { Insert("xaxcx"), Equal("abc"), Delete("y") };
             CollectionAssert.AreEqual(expected10, Diff.Compute("abcy", "xaxcxabc", 0, false), "diff_main: Overlap #2.");
         }
 
@@ -134,15 +135,15 @@ namespace DiffMatchPatch.Tests
         {
             var expected11 = new List<Diff>
             {
-                Diff.Delete("ABCD"),
-                Diff.Equal("a"),
-                Diff.Delete("="),
-                Diff.Insert("-"),
-                Diff.Equal("bcd"),
-                Diff.Delete("="),
-                Diff.Insert("-"),
-                Diff.Equal("efghijklmnopqrs"),
-                Diff.Delete("EFGHIJKLMNOefg")
+                Delete("ABCD"),
+                Equal("a"),
+                Delete("="),
+                Insert("-"),
+                Equal("bcd"),
+                Delete("="),
+                Insert("-"),
+                Equal("efghijklmnopqrs"),
+                Delete("EFGHIJKLMNOefg")
             };
             CollectionAssert.AreEqual(expected11,
                 Diff.Compute("ABCDa=bcd=efghijklmnopqrsEFGHIJKLMNOefg", "a-bcd-efghijklmnopqrs", 0, false),
@@ -153,11 +154,11 @@ namespace DiffMatchPatch.Tests
         {
             var expected12 = new List<Diff>
             {
-                Diff.Insert(" "),
-                Diff.Equal("a"),
-                Diff.Insert("nd"),
-                Diff.Equal(" [[Pennsylvania]]"),
-                Diff.Delete(" and [[New")
+                Insert(" "),
+                Equal("a"),
+                Insert("nd"),
+                Equal(" [[Pennsylvania]]"),
+                Delete(" and [[New")
             };
             CollectionAssert.AreEqual(expected12,
                 Diff.Compute("a [[Pennsylvania]] and [[New", " and [[Pennsylvania]]", 0, false),
