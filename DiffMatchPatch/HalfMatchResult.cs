@@ -2,11 +2,8 @@ using System;
 
 namespace DiffMatchPatch
 {
-    internal class HalfMatchResult : IEquatable<HalfMatchResult>
+    internal struct HalfMatchResult : IEquatable<HalfMatchResult>
     {
-        private HalfMatchResult() : this(string.Empty, string.Empty, string.Empty, string.Empty, string.Empty)
-        {
-        }
         public HalfMatchResult(string prefix1, string suffix1, string prefix2, string suffix2, string commonMiddle)
         {
             if (prefix1 == null) throw new ArgumentNullException("prefix1");
@@ -19,6 +16,11 @@ namespace DiffMatchPatch
             Prefix2 = prefix2;
             Suffix2 = suffix2;
             CommonMiddle = commonMiddle;
+        }
+
+        public HalfMatchResult Reverse()
+        {
+            return new HalfMatchResult(Prefix2, Suffix2, Prefix1, Suffix1, CommonMiddle);
         }
 
         public string Prefix1 { get; private set; }

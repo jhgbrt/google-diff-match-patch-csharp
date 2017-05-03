@@ -56,6 +56,12 @@ namespace DiffMatchPatch.Tests
             // Non-null case.
             Assert.AreEqual(4, TextUtil.CommonPrefix("1234abcdef", "1234xyz"));
         }
+        [TestMethod]
+        public void CommonPrefixBothStringsStartWithSameCommonPrefixIsDetected2()
+        {
+            // Non-null case.
+            Assert.AreEqual(4, TextUtil.CommonPrefix("abc1234abcdef", "efgh1234xyz", 3, 4));
+        }
 
         [TestMethod]
         public void CommonPrefixFirstStringIsSubstringOfSecondCommonPrefixIsDetected()
@@ -78,6 +84,12 @@ namespace DiffMatchPatch.Tests
         {
             // Non-null case.
             Assert.AreEqual(4, TextUtil.CommonSuffix("abcdef1234", "xyz1234"));
+        }
+        [TestMethod]
+        public void CommonSuffixBothStringsEndWithSameCommonSuffixIsDetected2()
+        {
+            // Non-null case.
+            Assert.AreEqual(4, TextUtil.CommonSuffix("abcdef1234abcd", "xyz1234efgh", 10, 7));
         }
 
         [TestMethod]

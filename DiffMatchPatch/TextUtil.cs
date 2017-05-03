@@ -13,14 +13,18 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="text1"></param>
         /// <param name="text2"></param>
+        /// <param name="i1">start index of substring in text1</param>
+        /// <param name="i2">start index of substring in text2</param>
         /// <returns>The number of characters common to the start of each string.</returns>
-        internal static int CommonPrefix(string text1, string text2)
+        internal static int CommonPrefix(string text1, string text2, int i1= 0, int i2 = 0)
         {
+            var l1 = text1.Length - i1;
+            var l2 = text2.Length - i2;
             // Performance analysis: http://neil.fraser.name/news/2007/10/09/
-            var n = Math.Min(text1.Length, text2.Length);
+            var n = Math.Min(l1, l2);
             for (var i = 0; i < n; i++)
             {
-                if (text1[i] != text2[i])
+                if (text1[i+i1] != text2[i+i2])
                 {
                     return i;
                 }
@@ -46,13 +50,15 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="text1"></param>
         /// <param name="text2"></param>
+        /// <param name="l1">maximum length to consider for text1</param>
+        /// <param name="l2">maximum length to consider for text2</param>
         /// <returns>The number of characters common to the end of each string.</returns>
-        internal static int CommonSuffix(string text1, string text2)
+        internal static int CommonSuffix(string text1, string text2, int? l1 = null, int? l2 = null)
         {
             // Performance analysis: http://neil.fraser.name/news/2007/10/09/
-            var text1Length = text1.Length;
-            var text2Length = text2.Length;
-            var n = Math.Min(text1.Length, text2.Length);
+            var text1Length = l1 ?? text1.Length;
+            var text2Length = l2 ?? text2.Length;
+            var n = Math.Min(text1Length, text2Length);
             for (var i = 1; i <= n; i++)
             {
                 if (text1[text1Length - i] != text2[text2Length - i])
@@ -67,7 +73,7 @@ namespace DiffMatchPatch
             // Performance analysis: http://neil.fraser.name/news/2007/10/09/
             var text1Length = text1.Length;
             var text2Length = text2.Length;
-            var n = Math.Min(text1.Length, text2.Length);
+            var n = Math.Min(text1Length, text2Length);
             for (var i = 1; i <= n; i++)
             {
                 if (text1[text1Length - i] != text2[text2Length - i])
@@ -157,8 +163,8 @@ namespace DiffMatchPatch
 
             while (j < shorttext.Length && (j = shorttext.IndexOf(seed, j + 1, StringComparison.Ordinal)) != -1)
             {
-                var prefixLength = CommonPrefix(longtext.Substring(i), shorttext.Substring(j));
-                var suffixLength = CommonSuffix(longtext.Substring(0, i), shorttext.Substring(0, j));
+                var prefixLength = CommonPrefix(longtext, shorttext, i, j);
+                var suffixLength = CommonSuffix(longtext, shorttext, i, j);
                 if (bestCommon.Length < suffixLength + prefixLength)
                 {
                     bestCommon = shorttext.Substring(j - suffixLength, suffixLength) + shorttext.Substring(j, prefixLength);
@@ -172,6 +178,7 @@ namespace DiffMatchPatch
                 ? new HalfMatchResult(bestLongtextA, bestLongtextB, bestShorttextA, bestShorttextB, bestCommon)
                 : HalfMatchResult.Empty;
         }
+
 
         /// <summary>
         /// Do the two texts share a Substring which is at least half the length of
@@ -201,25 +208,16 @@ namespace DiffMatchPatch
 
             HalfMatchResult hm;
             if (hm2.IsEmpty)
-            {
                 hm = hm1;
-            }
             else if (hm1.IsEmpty)
-            {
                 hm = hm2;
-            }
             else
-            {
-                // Both matched.  Select the longest.
                 hm = hm1 > hm2 ? hm1 : hm2;
-            }
 
             if (text1.Length > text2.Length)
                 return hm;
-
-            return new HalfMatchResult(
-                hm.Prefix2, hm.Suffix2, hm.Prefix1, hm.Suffix1, hm.CommonMiddle
-                );
+            else 
+                return hm.Reverse();
         }
 
         /// <summary>
