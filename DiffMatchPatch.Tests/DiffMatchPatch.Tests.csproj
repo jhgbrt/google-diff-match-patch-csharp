@@ -49,6 +49,7 @@
     <Reference Include="System.ValueTuple, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.3.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <Choose>
@@ -68,6 +69,8 @@
     <Compile Include="DiffList_CleanupSemanticLosslessTests.cs" />
     <Compile Include="DiffList_CleanupSemanticTests.cs" />
     <Compile Include="DiffList_ToDeltaTests.cs" />
+    <Compile Include="DiffMatchPatch.Original.cs" />
+    <Compile Include="DiffMatchPatchTest.Original.cs" />
     <Compile Include="TextUtil_MatchPatternTests.cs" />
     <Compile Include="Diff_ComputeTests.cs" />
     <Compile Include="PatchTests.cs" />

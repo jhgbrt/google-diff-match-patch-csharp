@@ -192,23 +192,34 @@ namespace DiffMatchPatch
             }
 
             // First check if the second quarter is the seed for a half-match.
-            var hm1 = HalfMatchI(longtext, shorttext, (longtext.Length*3)/4);
+            var hm1 = HalfMatchI(longtext, shorttext, (longtext.Length+3)/4);
             // Check again based on the third quarter.
-            var hm2 = HalfMatchI(longtext, shorttext, (longtext.Length*1)/2);
+            var hm2 = HalfMatchI(longtext, shorttext, (longtext.Length+1)/2);
 
+            if (hm1.IsEmpty && hm2.IsEmpty)
+                return hm1;
+
+            HalfMatchResult hm;
             if (hm2.IsEmpty)
             {
-                return hm1;
+                hm = hm1;
             }
-
-            if (hm1.IsEmpty)
+            else if (hm1.IsEmpty)
             {
-                return hm2;
+                hm = hm2;
             }
-            // Both matched.  Select the longest.
-            var hm = hm1 > hm2 ? hm1 : hm2;
+            else
+            {
+                // Both matched.  Select the longest.
+                hm = hm1 > hm2 ? hm1 : hm2;
+            }
 
-            return hm;
+            if (text1.Length > text2.Length)
+                return hm;
+
+            return new HalfMatchResult(
+                hm.Prefix2, hm.Suffix2, hm.Prefix1, hm.Suffix1, hm.CommonMiddle
+                );
         }
 
         /// <summary>
