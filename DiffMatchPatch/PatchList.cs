@@ -189,7 +189,7 @@ namespace DiffMatchPatch
         /// <returns>Two element Object array, containing the new text and an array of
         ///  bool values.</returns>
 
-        public static Tuple<string, bool[]> Apply(this List<Patch> patches, string text)
+        public static (string newText, bool[] results) Apply(this List<Patch> patches, string text)
         {
             return Apply(patches, text, MatchSettings.Default);
         }
@@ -204,14 +204,14 @@ namespace DiffMatchPatch
         /// <param name="settings"></param>
         /// <returns>Two element Object array, containing the new text and an array of
         ///  bool values.</returns>
-        public static Tuple<string, bool[]> Apply(this List<Patch> patches, string text,
+        public static (string newText, bool[] results) Apply(this List<Patch> patches, string text,
             MatchSettings matchSettings, PatchSettings settings = null
             )
         {
             settings = settings ?? PatchSettings.Default;
             if (patches.Count == 0)
             {
-                return Tuple.Create(text, new bool[0]);
+                return (text, new bool[0]);
             }
 
             // Deep copy the patches so that no changes are made to originals.
@@ -331,7 +331,7 @@ namespace DiffMatchPatch
             // Strip the padding off.
             text = text.Substring(nullPadding.Length, text.Length
                                                       - 2 * nullPadding.Length);
-            return Tuple.Create(text, results);
+            return (text, results);
         }
 
         /// <summary>
