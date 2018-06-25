@@ -52,7 +52,7 @@ namespace DiffMatchPatch
         /// <returns></returns>
         public static string ToText(this List<Patch> patches) => patches.Aggregate(new StringBuilder(), (sb, patch) => sb.Append(patch)).ToString();
 
-        static readonly Regex PatchHeader = new Regex("^@@ -(\\d+),?(\\d*) \\+(\\d+),?(\\d*) @@$", RegexOptions.Compiled);
+        static readonly Regex PatchHeader = new Regex("^@@ -(\\d+),?(\\d*) \\+(\\d+),?(\\d*) @@$");
 
         /// <summary>
         /// Parse a textual representation of patches and return a List of Patch
