@@ -189,11 +189,12 @@ namespace DiffMatchPatch
         /// <returns>Two element Object array, containing the new text and an array of
         ///  bool values.</returns>
 
-        public static (string newText, bool[] results) Apply(this List<Patch> patches, string text)
-        {
-            return Apply(patches, text, MatchSettings.Default);
-        }
+        public static (string newText, bool[] results) Apply(this List<Patch> patches, string text) 
+            => Apply(patches, text, MatchSettings.Default, PatchSettings.Default);
 
+
+        public static (string newText, bool[] results) Apply(this List<Patch> patches, string text, MatchSettings matchSettings) 
+            => Apply(patches, text, matchSettings, PatchSettings.Default);
 
         /// <summary>
         /// Merge a set of patches onto the text.  Return a patched text, as well
@@ -205,10 +206,8 @@ namespace DiffMatchPatch
         /// <returns>Two element Object array, containing the new text and an array of
         ///  bool values.</returns>
         public static (string newText, bool[] results) Apply(this List<Patch> patches, string text,
-            MatchSettings matchSettings, PatchSettings settings = null
-            )
+            MatchSettings matchSettings, PatchSettings settings)
         {
-            settings = settings ?? PatchSettings.Default;
             if (patches.Count == 0)
             {
                 return (text, new bool[0]);

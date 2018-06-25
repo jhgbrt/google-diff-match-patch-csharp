@@ -6,16 +6,11 @@ namespace DiffMatchPatch
     {
         public HalfMatchResult(string prefix1, string suffix1, string prefix2, string suffix2, string commonMiddle)
         {
-            if (prefix1 == null) throw new ArgumentNullException("prefix1");
-            if (prefix2 == null) throw new ArgumentNullException("prefix2");
-            if (suffix1 == null) throw new ArgumentNullException("suffix1");
-            if (suffix2 == null) throw new ArgumentNullException("suffix2");
-            if (commonMiddle == null) throw new ArgumentNullException("commonMiddle");
-            Prefix1 = prefix1;
-            Suffix1 = suffix1;
-            Prefix2 = prefix2;
-            Suffix2 = suffix2;
-            CommonMiddle = commonMiddle;
+            Prefix1 = prefix1 ?? throw new ArgumentNullException(nameof(prefix1));
+            Suffix1 = suffix1 ?? throw new ArgumentNullException(nameof(suffix1));
+            Prefix2 = prefix2 ?? throw new ArgumentNullException(nameof(prefix2));
+            Suffix2 = suffix2 ?? throw new ArgumentNullException(nameof(suffix2));
+            CommonMiddle = commonMiddle ?? throw new ArgumentNullException(nameof(commonMiddle));
         }
 
         public HalfMatchResult Reverse()
@@ -23,11 +18,11 @@ namespace DiffMatchPatch
             return new HalfMatchResult(Prefix2, Suffix2, Prefix1, Suffix1, CommonMiddle);
         }
 
-        public string Prefix1 { get; private set; }
-        public string Suffix1 { get; private set; }
-        public string CommonMiddle { get; private set; }
-        public string Prefix2 { get; private set; }
-        public string Suffix2 { get; private set; }
+        public string Prefix1 { get; }
+        public string Suffix1 { get; }
+        public string CommonMiddle { get; }
+        public string Prefix2 { get; }
+        public string Suffix2 { get; }
         public bool IsEmpty { get { return string.IsNullOrEmpty(CommonMiddle); }}
 
         public static readonly HalfMatchResult Empty = new HalfMatchResult();
@@ -35,15 +30,12 @@ namespace DiffMatchPatch
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
             return Equals((HalfMatchResult) obj);
         }
 
         public bool Equals(HalfMatchResult other)
         {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
             return string.Equals(Prefix1, other.Prefix1) && string.Equals(Suffix1, other.Suffix1) && string.Equals(CommonMiddle, other.CommonMiddle) && string.Equals(Prefix2, other.Prefix2) && string.Equals(Suffix2, other.Suffix2);
         }
         public override int GetHashCode()

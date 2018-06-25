@@ -1,6 +1,6 @@
 namespace DiffMatchPatch
 {
-    public class PatchSettings
+    public struct PatchSettings
     {
         /// <summary>
         /// When deleting a large block of text (over ~64 characters), how close

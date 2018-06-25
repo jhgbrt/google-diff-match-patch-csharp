@@ -751,7 +751,7 @@ namespace DiffMatchPatch
             var chars2 = 0;
             var lastChars1 = 0;
             var lastChars2 = 0;
-            Diff lastDiff = null;
+            Diff lastDiff = Diff.Create(Operation.Equal, string.Empty);
             foreach (var aDiff in diffs)
             {
                 if (aDiff.Operation != Operation.Insert)
@@ -773,7 +773,7 @@ namespace DiffMatchPatch
                 lastChars1 = chars1;
                 lastChars2 = chars2;
             }
-            if (lastDiff != null && lastDiff.Operation == Operation.Delete)
+            if (lastDiff.Operation == Operation.Delete)
             {
                 // The location was deleted.
                 return lastChars2;

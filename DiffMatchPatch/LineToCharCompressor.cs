@@ -3,7 +3,7 @@ using System.Text;
 
 namespace DiffMatchPatch
 {
-    public class LineToCharCompressor
+    class LineToCharCompressor
     {
         // e.g. _lineArray[4] == "Hello\n"
         // e.g. _lineHash["Hello\n"] == 4

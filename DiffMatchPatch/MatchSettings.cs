@@ -1,6 +1,6 @@
 namespace DiffMatchPatch
 {
-    public class MatchSettings
+    public struct MatchSettings
     {
         /// <summary>
         /// At what point is no match declared (0.0 = perfection, 1.0 = very loose).

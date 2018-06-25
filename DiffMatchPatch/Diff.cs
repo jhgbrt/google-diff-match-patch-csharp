@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace DiffMatchPatch
 {
-    public class Diff
+    public struct Diff
     {
         internal static Diff Create(Operation operation, string text)
         {
@@ -54,15 +54,26 @@ namespace DiffMatchPatch
         /// <returns></returns>
         public override bool Equals(Object obj)
         {
-            var p = obj as Diff;
-            return p != null && p.Operation == Operation && p.Text == Text;
+            if (ReferenceEquals(obj, null)) return false;
+            return Equals((Diff) obj);
         }
 
         public bool Equals(Diff obj)
         {
-            return obj != null && obj.Operation == Operation && obj.Text == Text;
+            return obj.Operation == Operation && obj.Text == Text;
 
         }
+
+        public static bool operator==(Diff left, Diff right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Diff left, Diff right)
+        {
+            return !(left == right);
+        }
+
 
         public override int GetHashCode()
         {

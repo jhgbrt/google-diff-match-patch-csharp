@@ -7,18 +7,17 @@ namespace DiffMatchPatch
 {
     public class Patch
     {
-        public Patch() { }
-        public Patch(int start1, int length1, int start2, int length2, IReadOnlyCollection<Diff> diffs)
+        public Patch() { Diffs = new List<Diff>(); }
+        public Patch(int start1, int length1, int start2, int length2, IEnumerable<Diff> diffs)
         {
             Start1 = start1;
             Start2 = start2;
             Length1 = length1;
             Length2 = length2;
-            _diffs = diffs.ToList();
+            Diffs = diffs.ToList();
         }
 
-        readonly List<Diff> _diffs = new List<Diff>();
-        public List<Diff> Diffs { get { return _diffs; } }
+        public List<Diff> Diffs { get; }
         public int Start1 { get; internal set; }
         public int Start2 { get; internal set; }
         public int Length1 { get; internal set; }
