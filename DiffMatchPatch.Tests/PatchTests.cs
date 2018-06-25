@@ -320,8 +320,8 @@ namespace DiffMatchPatch.Tests
         {
             var patches = Patch.Compute("", "");
             var results = patches.Apply("Hello world.");
-            var boolArray = results.Item2;
-            var resultStr = results.Item1 + "\t" + boolArray.Length;
+            var boolArray = results.results;
+            var resultStr = results.newText + "\t" + boolArray.Length;
             Assert.AreEqual("Hello world.\t0", resultStr, "patch_apply: Null case.");
         }
 
@@ -330,8 +330,8 @@ namespace DiffMatchPatch.Tests
         {
             var patches = Patch.Compute("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
             var results = patches.Apply("The quick brown fox jumps over the lazy dog.");
-            var boolArray = results.Item2;
-            var resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
+            var boolArray = results.results;
+            var resultStr = results.newText + "\t" + boolArray[0] + "\t" + boolArray[1];
             Assert.AreEqual("That quick brown fox jumped over a lazy dog.\tTrue\tTrue", resultStr,
                 "patch_apply: Exact match.");
 
@@ -342,8 +342,8 @@ namespace DiffMatchPatch.Tests
         {
             var patches = Patch.Compute("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
             var results = patches.Apply("The quick red rabbit jumps over the tired tiger.");
-            var boolArray = results.Item2;
-            var resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
+            var boolArray = results.results;
+            var resultStr = results.newText + "\t" + boolArray[0] + "\t" + boolArray[1];
             Assert.AreEqual("That quick red rabbit jumped over a tired tiger.\tTrue\tTrue", resultStr,
                 "patch_apply: Partial match.");
                     }
@@ -354,8 +354,8 @@ namespace DiffMatchPatch.Tests
 
             var patches = Patch.Compute("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
             var results = patches.Apply("I am the very model of a modern major general.");
-            var boolArray = results.Item2;
-            var resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
+            var boolArray = results.results;
+            var resultStr = results.newText + "\t" + boolArray[0] + "\t" + boolArray[1];
             Assert.AreEqual("I am the very model of a modern major general.\tFalse\tFalse", resultStr,
                 "patch_apply: Failed match.");
                     }
@@ -365,8 +365,8 @@ namespace DiffMatchPatch.Tests
         {
             var patches = Patch.Compute("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
             var results = patches.Apply("x123456789012345678901234567890-----++++++++++-----123456789012345678901234567890y");
-            var boolArray = results.Item2;
-            var resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
+            var boolArray = results.results;
+            var resultStr = results.newText + "\t" + boolArray[0] + "\t" + boolArray[1];
             Assert.AreEqual("xabcy\tTrue\tTrue", resultStr, "patch_apply: Big delete, small change.");
         }
 
@@ -376,8 +376,8 @@ namespace DiffMatchPatch.Tests
 
             var patches = Patch.Compute("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
             var results = patches.Apply("x12345678901234567890---------------++++++++++---------------12345678901234567890y");
-            var boolArray = results.Item2;
-            var resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
+            var boolArray = results.results;
+            var resultStr = results.newText + "\t" + boolArray[0] + "\t" + boolArray[1];
             Assert.AreEqual(
                 "xabc12345678901234567890---------------++++++++++---------------12345678901234567890y\tFalse\tTrue",
                 resultStr, "patch_apply: Big delete, big change 1.");
@@ -389,8 +389,8 @@ namespace DiffMatchPatch.Tests
         {
             var patches = Patch.Compute("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
             var results = patches.Apply("x12345678901234567890---------------++++++++++---------------12345678901234567890y", MatchSettings.Default, new PatchSettings(0.6f, 4));
-            var boolArray = results.Item2;
-            var resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
+            var boolArray = results.results;
+            var resultStr = results.newText + "\t" + boolArray[0] + "\t" + boolArray[1];
             Assert.AreEqual("xabcy\tTrue\tTrue", resultStr, "patch_apply: Big delete, big change 2.");
 
         }
@@ -400,8 +400,8 @@ namespace DiffMatchPatch.Tests
         {
             var patches = Patch.Compute("abcdefghijklmnopqrstuvwxyz--------------------1234567890", "abcXXXXXXXXXXdefghijklmnopqrstuvwxyz--------------------1234567YYYYYYYYYY890");
             var results = patches.Apply("ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567890", new MatchSettings(0.0f, 0));
-            var boolArray = results.Item2;
-            var resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
+            var boolArray = results.results;
+            var resultStr = results.newText + "\t" + boolArray[0] + "\t" + boolArray[1];
             Assert.AreEqual("ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890\tFalse\tTrue", resultStr,
                 "patch_apply: Compensate for failed patch.");
 
@@ -432,8 +432,8 @@ namespace DiffMatchPatch.Tests
 
             var patches = Patch.Compute("", "test");
             var results = patches.Apply("");
-            var boolArray = results.Item2;
-            var resultStr = results.Item1 + "\t" + boolArray[0];
+            var boolArray = results.results;
+            var resultStr = results.newText + "\t" + boolArray[0];
             Assert.AreEqual("test\tTrue", resultStr, "patch_apply: Edge exact match.");
         }
 
@@ -443,8 +443,8 @@ namespace DiffMatchPatch.Tests
 
             var patches = Patch.Compute("XY", "XtestY");
             var results = patches.Apply("XY");
-            var boolArray = results.Item2;
-            var resultStr = results.Item1 + "\t" + boolArray[0];
+            var boolArray = results.results;
+            var resultStr = results.newText + "\t" + boolArray[0];
             Assert.AreEqual("XtestY\tTrue", resultStr, "patch_apply: Near edge exact match.");
 
         }
@@ -454,8 +454,8 @@ namespace DiffMatchPatch.Tests
         {
             var patches = Patch.Compute("y", "y123");
             var results = patches.Apply("x");
-            var boolArray = results.Item2;
-            var resultStr = results.Item1 + "\t" + boolArray[0];
+            var boolArray = results.results;
+            var resultStr = results.newText + "\t" + boolArray[0];
             Assert.AreEqual("x123\tTrue", resultStr, "patch_apply: Edge partial match.");
         }
 

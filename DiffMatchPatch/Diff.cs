@@ -6,24 +6,10 @@ namespace DiffMatchPatch
 {
     public struct Diff
     {
-        internal static Diff Create(Operation operation, string text)
-        {
-            return new Diff(operation, text);
-        }
-
-        internal static Diff Equal(string text)
-        {
-            return Create(Operation.Equal, text);
-        }
-
-        internal static Diff Insert(string text)
-        {
-            return Create(Operation.Insert, text);
-        }
-        internal static Diff Delete(string text)
-        {
-            return Create(Operation.Delete, text);
-        }
+        internal static Diff Create(Operation operation, string text) => new Diff(operation, text);
+        internal static Diff Equal(string text) => Create(Operation.Equal, text);
+        internal static Diff Insert(string text) => Create(Operation.Insert, text);
+        internal static Diff Delete(string text) => Create(Operation.Delete, text);
 
         public readonly Operation Operation;
         // One of: INSERT, DELETE or EQUAL.
@@ -52,43 +38,20 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public override bool Equals(Object obj)
-        {
-            if (ReferenceEquals(obj, null)) return false;
-            return Equals((Diff) obj);
-        }
+        public override bool Equals(Object obj) => !ReferenceEquals(obj, null) && Equals((Diff) obj);
 
-        public bool Equals(Diff obj)
-        {
-            return obj.Operation == Operation && obj.Text == Text;
+        public bool Equals(Diff obj) => obj.Operation == Operation && obj.Text == Text;
 
-        }
+        public static bool operator==(Diff left, Diff right) => left.Equals(right);
 
-        public static bool operator==(Diff left, Diff right)
-        {
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(Diff left, Diff right)
-        {
-            return !(left == right);
-        }
+        public static bool operator !=(Diff left, Diff right) => !(left == right);
 
 
-        public override int GetHashCode()
-        {
-            return Text.GetHashCode() ^ Operation.GetHashCode();
-        }
+        public override int GetHashCode() => Text.GetHashCode() ^ Operation.GetHashCode();
 
-        internal Diff Replace(string toString)
-        {
-            return Create(Operation, toString);
-        }
+        internal Diff Replace(string toString) => Create(Operation, toString);
 
-        internal Diff Copy()
-        {
-            return Create(Operation, Text);
-        }
+        internal Diff Copy() => Create(Operation, Text);
 
         /// <summary>
         /// Find the differences between two texts.
@@ -109,11 +72,7 @@ namespace DiffMatchPatch
             }
         }
 
-        public static List<Diff> Compute(string text1, string text2, bool checkLines, CancellationToken token, bool optimizeForSpeed)
-        {
-            return DiffAlgorithm.Compute(text1, text2, checkLines, token, optimizeForSpeed);
-        }
-        
-
+        public static List<Diff> Compute(string text1, string text2, bool checkLines, CancellationToken token, bool optimizeForSpeed) 
+            => DiffAlgorithm.Compute(text1, text2, checkLines, token, optimizeForSpeed);
     }
 }

@@ -23,7 +23,7 @@ namespace DiffMatchPatch
         public string CommonMiddle { get; }
         public string Prefix2 { get; }
         public string Suffix2 { get; }
-        public bool IsEmpty { get { return string.IsNullOrEmpty(CommonMiddle); }}
+        public bool IsEmpty => string.IsNullOrEmpty(CommonMiddle);
 
         public static readonly HalfMatchResult Empty = new HalfMatchResult();
 
@@ -51,29 +51,14 @@ namespace DiffMatchPatch
             }
         }
 
-        public static bool operator ==(HalfMatchResult left, HalfMatchResult right)
-        {
-            return Equals(left, right);
-        }
+        public static bool operator ==(HalfMatchResult left, HalfMatchResult right) => Equals(left, right);
 
-        public static bool operator !=(HalfMatchResult left, HalfMatchResult right)
-        {
-            return !Equals(left, right);
-        }
-        
-        public static bool operator >(HalfMatchResult left, HalfMatchResult right)
-        {
-            return left.CommonMiddle.Length > right.CommonMiddle.Length;
-        }
+        public static bool operator !=(HalfMatchResult left, HalfMatchResult right) => !Equals(left, right);
 
-        public static bool operator <(HalfMatchResult left, HalfMatchResult right)
-        {
-            return left.CommonMiddle.Length < right.CommonMiddle.Length;
-        }
+        public static bool operator >(HalfMatchResult left, HalfMatchResult right) => left.CommonMiddle.Length > right.CommonMiddle.Length;
 
-        public override string ToString()
-        {
-            return $"[{Prefix1}/{Prefix2}] - {CommonMiddle} - [{Suffix1}/{Suffix2}]";
-        }
+        public static bool operator <(HalfMatchResult left, HalfMatchResult right) => left.CommonMiddle.Length < right.CommonMiddle.Length;
+
+        public override string ToString() => $"[{Prefix1}/{Prefix2}] - {CommonMiddle} - [{Suffix1}/{Suffix2}]";
     }
 }

@@ -20,10 +20,11 @@ namespace DiffMatchPatch.PerformanceTest
         {
             var oldText = File.ReadAllText("left.txt");
             var newText = File.ReadAllText("right.txt");
-            List<Diff> diff;
-            diff = Diff.Compute(oldText, newText, 5);
+
+            var diff = Diff.Compute(oldText, newText, 5);
             diff.CleanupEfficiency();
             diff.CleanupSemantic();
+
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < 1; i++)
             {

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Web;
 
 namespace DiffMatchPatch
 {
@@ -14,10 +13,7 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="patches"></param>
         /// <returns></returns>
-        private static List<Patch> DeepCopy(this IEnumerable<Patch> patches)
-        {
-            return patches.Select(p => p.Copy()).ToList();
-        }
+        private static List<Patch> DeepCopy(this IEnumerable<Patch> patches) => patches.Select(p => p.Copy()).ToList();
 
         /// <summary>
         /// Add some padding on text start and end so that edges can match something.
@@ -43,50 +39,8 @@ namespace DiffMatchPatch
                 aPatch.Start2 += paddingLength;
             }
 
-            // Add some padding on start of first diff.
-            var patch = patches.First();
-            var diffs = patch.Diffs;
-            if (diffs.Count == 0 || diffs[0].Operation != Operation.Equal)
-            {
-                // Add nullPadding equality.
-                diffs.Insert(0, Diff.Equal(nullPadding));
-                patch.Start1 -= paddingLength;  // Should be 0.
-                patch.Start2 -= paddingLength;  // Should be 0.
-                patch.Length1 += paddingLength;
-                patch.Length2 += paddingLength;
-            }
-            else if (paddingLength > diffs[0].Text.Length)
-            {
-                // Grow first equality.
-                var firstDiff = diffs[0];
-                var extraLength = nullPadding.Length - firstDiff.Text.Length;
-                diffs[0] = firstDiff.Replace(nullPadding.Substring(firstDiff.Text.Length) + firstDiff.Text);
-                patch.Start1 -= extraLength;
-                patch.Start2 -= extraLength;
-                patch.Length1 += extraLength;
-                patch.Length2 += extraLength;
-            }
-
-            // Add some padding on end of last diff.
-            patch = patches.Last();
-            diffs = patch.Diffs;
-            if (diffs.Count == 0 || diffs.Last().Operation != Operation.Equal)
-            {
-                // Add nullPadding equality.
-                diffs.Add(Diff.Equal(nullPadding));
-                patch.Length1 += paddingLength;
-                patch.Length2 += paddingLength;
-            }
-            else if (paddingLength > diffs[diffs.Count - 1].Text.Length)
-            {
-                // Grow last equality.
-                var lastDiff = diffs[diffs.Count - 1];
-                var extraLength = nullPadding.Length - lastDiff.Text.Length;
-                var text = lastDiff.Text + nullPadding.Substring(0, extraLength);
-                diffs[diffs.Count - 1] = lastDiff.Replace(text);
-                patch.Length1 += extraLength;
-                patch.Length2 += extraLength;
-            }
+            patches.First().AddPaddingBeforeFirstDiff(nullPadding);
+            patches.Last().AddPaddingAfterLastDiff(nullPadding);
 
             return nullPadding;
         }
@@ -96,16 +50,8 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="patches"></param>
         /// <returns></returns>
-        public static string ToText(this List<Patch> patches)
-        {
-            var text = new StringBuilder();
-            foreach (var aPatch in patches)
-            {
-                text.Append(aPatch);
-            }
-            return text.ToString();
-        }
-        
+        public static string ToText(this List<Patch> patches) => patches.Aggregate(new StringBuilder(), (sb, patch) => sb.Append(patch)).ToString();
+
         static readonly Regex PatchHeader = new Regex("^@@ -(\\d+),?(\\d*) \\+(\\d+),?(\\d*) @@$", RegexOptions.Compiled);
 
         /// <summary>
@@ -368,8 +314,7 @@ namespace DiffMatchPatch
                         patch.Length1 = patch.Length2 = precontext.Length;
                         patch.Diffs.Add(Diff.Equal(precontext));
                     }
-                    while (diffs.Count != 0
-                           && patch.Length1 < patchSize - patchMargin)
+                    while (diffs.Any() && patch.Length1 < patchSize - patchMargin)
                     {
                         var diffType = diffs[0].Operation;
                         var diffText = diffs[0].Text;
@@ -433,10 +378,10 @@ namespace DiffMatchPatch
                     {
                         patch.Length1 += postcontext.Length;
                         patch.Length2 += postcontext.Length;
-                        if (patch.Diffs.Count != 0
-                            && patch.Diffs[patch.Diffs.Count - 1].Operation == Operation.Equal)
+                        var lastDiff = patch.Diffs.Last();
+                        if (patch.Diffs.Any() && lastDiff.Operation == Operation.Equal)
                         {
-                            patch.Diffs[patch.Diffs.Count - 1] = patch.Diffs[patch.Diffs.Count - 1].Replace(patch.Diffs[patch.Diffs.Count - 1].Text + postcontext);
+                            patch.Diffs[patch.Diffs.Count - 1] = lastDiff.Replace(lastDiff.Text + postcontext);
                         }
                         else
                         {

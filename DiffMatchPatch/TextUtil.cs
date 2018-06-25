@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Web;
 
@@ -214,10 +212,7 @@ namespace DiffMatchPatch
             else
                 hm = hm1 > hm2 ? hm1 : hm2;
 
-            if (text1.Length > text2.Length)
-                return hm;
-            else 
-                return hm.Reverse();
+            return text1.Length > text2.Length ? hm : hm.Reverse();
         }
 
         /// <summary>
@@ -231,15 +226,13 @@ namespace DiffMatchPatch
         /// Example: "%3f" -> "?", "%24" -> "$", etc.</summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        internal static string UnescapeForEncodeUriCompatability(this string str)
-        {
-            return str.Replace("%21", "!").Replace("%7e", "~")
-                .Replace("%27", "'").Replace("%28", "(").Replace("%29", ")")
-                .Replace("%3b", ";").Replace("%2f", "/").Replace("%3f", "?")
-                .Replace("%3a", ":").Replace("%40", "@").Replace("%26", "&")
-                .Replace("%3d", "=").Replace("%2b", "+").Replace("%24", "$")
-                .Replace("%2c", ",").Replace("%23", "#");
-        }
+        internal static string UnescapeForEncodeUriCompatability(this string str) 
+            => str.Replace("%21", "!").Replace("%7e", "~")
+            .Replace("%27", "'").Replace("%28", "(").Replace("%29", ")")
+            .Replace("%3b", ";").Replace("%2f", "/").Replace("%3f", "?")
+            .Replace("%3a", ":").Replace("%40", "@").Replace("%26", "&")
+            .Replace("%3d", "=").Replace("%2b", "+").Replace("%24", "$")
+            .Replace("%2c", ",").Replace("%23", "#");
 
         internal static string UrlEncoded(this string str)
         {
@@ -261,10 +254,9 @@ namespace DiffMatchPatch
         /// <param name="pattern">pattern to search for</param>
         /// <param name="loc">location to search around</param>
         /// <returns>Best match index, -1 if not found</returns>
-        internal static int FindBestMatchIndex(this string text, string pattern, int loc)
-        {
-            return FindBestMatchIndex(text, pattern, loc, MatchSettings.Default);
-        }
+        internal static int FindBestMatchIndex(this string text, string pattern, int loc) 
+            => FindBestMatchIndex(text, pattern, loc, MatchSettings.Default);
+
         internal static int FindBestMatchIndex(this string text, string pattern, int loc, MatchSettings settings)
         {
             // Check for null inputs not needed since null can't be passed in C#.

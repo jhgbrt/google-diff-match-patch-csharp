@@ -25,11 +25,7 @@ namespace DiffMatchPatch
 {
     internal static class Extensions
     {
-        internal static List<T> Splice<T>(this List<T> input, int start, int count, params T[] objects)
-        {
-            IEnumerable<T> enumerable = objects;
-            return input.Splice(start, count, enumerable);
-        }
+        internal static List<T> Splice<T>(this List<T> input, int start, int count, params T[] objects) => input.Splice(start, count, (IEnumerable<T>) objects);
 
         /// <summary>
         /// replaces [count] entries starting at index [start] with the given [objects]

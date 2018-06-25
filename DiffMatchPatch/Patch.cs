@@ -16,7 +16,6 @@ namespace DiffMatchPatch
             Length2 = length2;
             Diffs = diffs.ToList();
         }
-
         public List<Diff> Diffs { get; }
         public int Start1 { get; internal set; }
         public int Start2 { get; internal set; }
@@ -197,7 +196,7 @@ namespace DiffMatchPatch
             var postpatchText = text1;
             foreach (var aDiff in diffs)
             {
-                if (patch.Diffs.Count == 0 && aDiff.Operation != Operation.Equal)
+                if (!patch.Diffs.Any() && aDiff.Operation != Operation.Equal)
                 {
                     // A new patch starts here.
                     patch.Start1 = charCount1;
@@ -215,11 +214,11 @@ namespace DiffMatchPatch
                         patch.Length1 += aDiff.Text.Length;
                         patch.Diffs.Add(aDiff);
                         postpatchText = postpatchText.Remove(charCount2,
-                            aDiff.Text.Length);
+                           aDiff.Text.Length);
                         break;
                     case Operation.Equal:
                         if (aDiff.Text.Length <= 2 * patchMargin
-                            && patch.Diffs.Count != 0 && aDiff != diffs.Last())
+                            && patch.Diffs.Any() && aDiff != diffs.Last())
                         {
                             // Small equality inside a patch.
                             patch.Diffs.Add(aDiff);
@@ -230,7 +229,7 @@ namespace DiffMatchPatch
                         if (aDiff.Text.Length >= 2 * patchMargin)
                         {
                             // Time for a new patch.
-                            if (patch.Diffs.Count != 0)
+                            if (patch.Diffs.Any())
                             {
                                 patch.AddContext(prepatchText);
                                 patches.Add(patch);
@@ -257,13 +256,59 @@ namespace DiffMatchPatch
                 }
             }
             // Pick up the leftover patch if not empty.
-            if (patch.Diffs.Count != 0)
+            if (patch.Diffs.Any())
             {
                 patch.AddContext(prepatchText);
                 patches.Add(patch);
             }
 
             return patches;
+        }
+
+        public void AddPaddingBeforeFirstDiff(string nullPadding)
+        {
+            if (Diffs.Count == 0 || Diffs[0].Operation != Operation.Equal)
+            {
+                // Add nullPadding equality.
+                Diffs.Insert(0, Diff.Equal(nullPadding));
+                Start1 -= nullPadding.Length;  // Should be 0.
+                Start2 -= nullPadding.Length;  // Should be 0.
+                Length1 += nullPadding.Length;
+                Length2 += nullPadding.Length;
+            }
+            else if (nullPadding.Length > Diffs[0].Text.Length)
+            {
+                // Grow first equality.
+                var firstDiff = Diffs[0];
+                var extraLength = nullPadding.Length - firstDiff.Text.Length;
+                Diffs[0] = firstDiff.Replace(nullPadding.Substring(firstDiff.Text.Length) + firstDiff.Text);
+                Start1 -= extraLength;
+                Start2 -= extraLength;
+                Length1 += extraLength;
+                Length2 += extraLength;
+            }
+
+        }
+
+        public void AddPaddingAfterLastDiff(string nullPadding)
+        {
+            if (Diffs.Count == 0 || Diffs.Last().Operation != Operation.Equal)
+            {
+                // Add nullPadding equality.
+                Diffs.Add(Diff.Equal(nullPadding));
+                Length1 += nullPadding.Length;
+                Length2 += nullPadding.Length;
+            }
+            else if (nullPadding.Length > Diffs[Diffs.Count - 1].Text.Length)
+            {
+                // Grow last equality.
+                var lastDiff = Diffs[Diffs.Count - 1];
+                var extraLength = nullPadding.Length - lastDiff.Text.Length;
+                var text = lastDiff.Text + nullPadding.Substring(0, extraLength);
+                Diffs[Diffs.Count - 1] = lastDiff.Replace(text);
+                Length1 += extraLength;
+                Length2 += extraLength;
+            }
         }
     }
 }
