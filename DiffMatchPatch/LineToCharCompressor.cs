@@ -11,8 +11,8 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="text"></param>
         /// <returns></returns>
-        public string Compress(string text) 
-            => EnsureHashed(text.SplitLines(65535)).Aggregate(new StringBuilder(), (sb, line) => sb.Append(this[line])).ToString();
+        public string Compress(string text, int maxLines = char.MaxValue) 
+            => EnsureHashed(text.SplitLines(maxLines)).Aggregate(new StringBuilder(), (sb, line) => sb.Append(this[line])).ToString();
 
         /// <summary>
         /// Decompresses a series of characters that was previously compressed back to the original lines of text.

@@ -156,8 +156,8 @@ namespace DiffMatchPatch
         {
             // Scan the text on a line-by-line basis first.
             var compressor = new LineToCharCompressor();
-            text1 = compressor.Compress(text1);
-            text2 = compressor.Compress(text2);
+            text1 = compressor.Compress(text1, char.MaxValue*2/3);
+            text2 = compressor.Compress(text2, char.MaxValue);
             var diffs = Compute(text1, text2, false, token, optimizeForSpeed)
                 .Select(diff => diff.Replace(compressor.Decompress(diff.Text)))
                 .ToList();

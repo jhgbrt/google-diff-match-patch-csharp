@@ -78,7 +78,7 @@ namespace DiffMatchPatch.Tests
 
             LineToCharCompressor compressor = new LineToCharCompressor();
 
-            var result = compressor.Compress(chars);
+            var result = compressor.Compress(chars, sizeof(char));
             var decompressed = compressor.Decompress(result);
 
             Assert.AreEqual(chars.Length, decompressed.Length);
