@@ -482,7 +482,7 @@ namespace DiffMatchPatch
             // Stack of indices where equalities are found.
             var equalities = new Stack<int>();
             // Always equal to equalities[equalitiesLength-1][1]
-            var lastequality = string.Empty;
+            var lastEquality = string.Empty;
             // Is there an insertion operation before the last equality.
             var preIns = false;
             // Is there a deletion operation before the last equality.
@@ -502,13 +502,13 @@ namespace DiffMatchPatch
                         equalities.Push(i);
                         preIns = postIns;
                         preDel = postDel;
-                        lastequality = diffs[i].Text;
+                        lastEquality = diffs[i].Text;
                     }
                     else
                     {
                         // Not a candidate, and can never become one.
                         equalities.Clear();
-                        lastequality = string.Empty;
+                        lastEquality = string.Empty;
                     }
                     postIns = postDel = false;
                 }
@@ -530,15 +530,15 @@ namespace DiffMatchPatch
                      * <ins>A</del>X<ins>C</ins><del>D</del>
                      * <ins>A</ins><del>B</del>X<del>C</del>
                      */
-                    if ((lastequality.Length != 0)
+                    if ((lastEquality.Length != 0)
                         && ((preIns && preDel && postIns && postDel)
-                            || ((lastequality.Length < diffEditCost / 2)
+                            || ((lastEquality.Length < diffEditCost / 2)
                                 && (preIns ? 1 : 0) + (preDel ? 1 : 0) + (postIns ? 1 : 0)
                                 + (postDel ? 1 : 0) == 3)))
                     {
-                        diffs.Splice(equalities.Peek(), 1, Diff.Delete(lastequality), Diff.Insert(lastequality));
+                        diffs.Splice(equalities.Peek(), 1, Diff.Delete(lastEquality), Diff.Insert(lastEquality));
                         equalities.Pop();  // Throw away the equality we just deleted.
-                        lastequality = string.Empty;
+                        lastEquality = string.Empty;
                         if (preIns && preDel)
                         {
                             // No changes made which could affect previous entry, keep going.
@@ -575,7 +575,7 @@ namespace DiffMatchPatch
             // Stack of indices where equalities are found.
             var equalities = new Stack<int>();
             // Always equal to equalities[equalitiesLength-1][1]
-            string lastequality = null;
+            string lastEquality = null;
             var pointer = 0;  // Index of current position.
             // Number of characters that changed prior to the equality.
             var lengthInsertions1 = 0;
@@ -592,7 +592,7 @@ namespace DiffMatchPatch
                     lengthDeletions1 = lengthDeletions2;
                     lengthInsertions2 = 0;
                     lengthDeletions2 = 0;
-                    lastequality = diffs[pointer].Text;
+                    lastEquality = diffs[pointer].Text;
                 }
                 else
                 {  // an insertion or deletion
@@ -606,14 +606,14 @@ namespace DiffMatchPatch
                     }
                     // Eliminate an equality that is smaller or equal to the edits on both
                     // sides of it.
-                    if (lastequality != null && (lastequality.Length
+                    if (lastEquality != null && (lastEquality.Length
                                                  <= Math.Max(lengthInsertions1, lengthDeletions1))
-                        && (lastequality.Length
+                        && (lastEquality.Length
                             <= Math.Max(lengthInsertions2, lengthDeletions2)))
                     {
                         // Duplicate record.
 
-                        diffs.Splice(equalities.Peek(), 1, Diff.Delete(lastequality), Diff.Insert(lastequality));
+                        diffs.Splice(equalities.Peek(), 1, Diff.Delete(lastEquality), Diff.Insert(lastEquality));
 
                         // Throw away the equality we just deleted.
                         equalities.Pop();
@@ -626,7 +626,7 @@ namespace DiffMatchPatch
                         lengthDeletions1 = 0;
                         lengthInsertions2 = 0;
                         lengthDeletions2 = 0;
-                        lastequality = null;
+                        lastEquality = null;
                     }
                 }
                 pointer++;
