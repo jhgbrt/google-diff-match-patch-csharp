@@ -156,6 +156,34 @@ namespace DiffMatchPatch.Tests
             diffs.CleanupMerge();
             CollectionAssert.AreEqual(new List<Diff> { Diff.Equal("xca"), Diff.Delete("cba") }, diffs);
         }
-    
+
+        [TestMethod]
+        public void EmptyMerge()
+        {
+            var diffs = new List<Diff>
+            {
+                Diff.Delete("b"),
+                Diff.Insert("ab"),
+                Diff.Equal("c")
+            };
+            diffs.CleanupMerge();
+            CollectionAssert.AreEqual(new List<Diff> { Diff.Insert("a"), Diff.Equal("bc") }, diffs);
+        }
+
+        [TestMethod]
+        public void EmptyEquality()
+        {
+            var diffs = new List<Diff>
+            {
+                Diff.Equal(""),
+                Diff.Insert("a"),
+                Diff.Equal("b")
+            };
+            diffs.CleanupMerge();
+            CollectionAssert.AreEqual(new List<Diff> { Diff.Insert("a"), Diff.Equal("b") }, diffs);
+
+        }
+
+
     }
 }
