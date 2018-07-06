@@ -61,6 +61,7 @@
     <Compile Include="DiffList_ToDeltaTests.cs" />
     <Compile Include="DiffMatchPatch.Original.cs" />
     <Compile Include="DiffMatchPatchTest.Original.cs" />
+    <Compile Include="OriginalTests.cs" />
     <Compile Include="TextUtil_MatchPatternTests.cs" />
     <Compile Include="Diff_ComputeTests.cs" />
     <Compile Include="PatchTests.cs" />

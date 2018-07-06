@@ -12,7 +12,7 @@ namespace DiffMatchPatch
         /// <param name="text"></param>
         /// <returns></returns>
         public string Compress(string text) 
-            => EnsureHashed(text.SplitLines()).Aggregate(new StringBuilder(), (sb, line) => sb.Append(this[line])).ToString();
+            => EnsureHashed(text.SplitLines(65535)).Aggregate(new StringBuilder(), (sb, line) => sb.Append(this[line])).ToString();
 
         /// <summary>
         /// Decompresses a series of characters that was previously compressed back to the original lines of text.
@@ -20,7 +20,7 @@ namespace DiffMatchPatch
         /// <param name="text"></param>
         /// <returns></returns>
         public string Decompress(string text) 
-            => text.Aggregate(new StringBuilder(), (sb, c) => sb.Append(this[c])).ToString();
+            => text.Where(c => c < 65535).Aggregate(new StringBuilder(), (sb, c) => sb.Append(this[c])).Append(text.Length == 65535 ? this[65535] : "").ToString();
 
         // e.g. _lineArray[4] == "Hello\n"
         // e.g. _lineHash["Hello\n"] == 4

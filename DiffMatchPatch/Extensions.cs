@@ -44,21 +44,29 @@ namespace DiffMatchPatch
             return deletedRange;
         }
 
-        internal static IEnumerable<string> SplitLines(this string text)
+        internal static IEnumerable<string> SplitLines(this string text, int max)
         {
+            var count = 0;
             var lineStart = 0;
             var lineEnd = -1;
-            while (lineEnd < text.Length - 1)
+            while (lineEnd < text.Length - 1 && count < max)
             {
-
-                lineEnd = text.IndexOf('\n', lineStart);
-                if (lineEnd == -1)
+                count++;
+                if (count == max)
                 {
-                    lineEnd = text.Length - 1;
+                    yield return text.Substring(lineStart);
                 }
-                var line = text.Substring(lineStart, lineEnd + 1 - lineStart);
-                yield return line;
-                lineStart = lineEnd + 1;
+                else
+                {
+                    lineEnd = text.IndexOf('\n', lineStart);
+                    if (lineEnd == -1)
+                    {
+                        lineEnd = text.Length - 1;
+                    }
+                    var line = text.Substring(lineStart, lineEnd + 1 - lineStart);
+                    yield return line;
+                    lineStart = lineEnd + 1;
+                }
             }
         }
     }
