@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -12,11 +11,11 @@ namespace DiffMatchPatch.PerformanceTest
         public static void Main()
         {
             var t = new PerformanceTest();
-            t.TestPerformance();
+            t.TestPerformance1();
         }
 
         [TestMethod]
-        public void TestPerformance()
+        public void TestPerformance1()
         {
             var oldText = File.ReadAllText("left.txt");
             var newText = File.ReadAllText("right.txt");
@@ -35,6 +34,26 @@ namespace DiffMatchPatch.PerformanceTest
             //var patched = Patch.FromDiffs(diff).Apply(oldText);
             var elapsed = sw.ElapsedMilliseconds;
             Console.WriteLine(elapsed);
+            //var fileName = Path.ChangeExtension(Path.GetTempFileName(), "html");
+            //File.WriteAllText(fileName, diff.PrettyHtml());
+            //Process.Start(fileName);
+        }
+
+        [TestMethod]
+        public void TestPerformance2()
+        {
+            string text1 = File.ReadAllText("Speedtest1.txt");
+            string text2 = File.ReadAllText("Speedtest2.txt");
+
+
+            // Execute one reverse diff as a warmup.
+            Diff.Compute(text2, text1);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            var sw = Stopwatch.StartNew();
+            var diff = Diff.Compute(text1, text2);
+            Console.WriteLine("Elapsed time: " + sw.Elapsed);
             //var fileName = Path.ChangeExtension(Path.GetTempFileName(), "html");
             //File.WriteAllText(fileName, diff.PrettyHtml());
             //Process.Start(fileName);

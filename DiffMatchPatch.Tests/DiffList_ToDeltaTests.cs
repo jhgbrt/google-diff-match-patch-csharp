@@ -63,13 +63,6 @@ namespace DiffMatchPatch.Tests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(DecoderFallbackException))]
-        public void FromDelta_InvalidUnicodeInput_Throws()
-        {
-            DiffList.FromDelta("", "+%c3%xy").ToList();
-        }
-        
-        [TestMethod]
         public void Delta_SpecialCharacters_Works()
         {
             var zero = (char)0;

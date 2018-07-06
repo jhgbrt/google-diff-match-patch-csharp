@@ -1,6 +1,6 @@
 using System;
 using System.Text;
-using System.Web;
+using System.Text.RegularExpressions;
 
 namespace DiffMatchPatch
 {
@@ -214,34 +214,40 @@ namespace DiffMatchPatch
 
             return text1.Length > text2.Length ? hm : hm.Reverse();
         }
+        private static Regex HEXCODE = new Regex("%[0-9A-F][0-9A-F]");
 
         /// <summary>
-        /// Unescape selected chars for compatability with JavaScript's encodeURI.
+        /// Unescape selected chars for compatibility with JavaScript's encodeURI.
         /// In speed critical applications this could be dropped since the
         /// receiving application will certainly decode these fine.
         /// Note that this function is case-sensitive.  Thus "%3F" would not be
         /// unescaped.  But this is ok because it is only called with the output of
-        /// HttpUtility.UrlEncode which returns lowercase hex.
+        /// Uri.EscapeDataString which returns lowercase hex.
         /// 
         /// Example: "%3f" -> "?", "%24" -> "$", etc.</summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        internal static string UnescapeForEncodeUriCompatability(this string str) 
-            => str.Replace("%21", "!").Replace("%7e", "~")
-            .Replace("%27", "'").Replace("%28", "(").Replace("%29", ")")
-            .Replace("%3b", ";").Replace("%2f", "/").Replace("%3f", "?")
-            .Replace("%3a", ":").Replace("%40", "@").Replace("%26", "&")
-            .Replace("%3d", "=").Replace("%2b", "+").Replace("%24", "$")
-            .Replace("%2c", ",").Replace("%23", "#");
+        internal static string UnescapeForEncodeUriCompatability(this string str)
+        {
+             str = new StringBuilder(str)
+                .Replace("%20", " ").Replace("%21", "!").Replace("%2A", "*")
+                .Replace("%27", "'").Replace("%28", "(").Replace("%29", ")")
+                .Replace("%3B", ";").Replace("%2F", "/").Replace("%3F", "?")
+                .Replace("%3A", ":").Replace("%40", "@").Replace("%26", "&")
+                .Replace("%3D", "=").Replace("%2B", "+").Replace("%24", "$")
+                .Replace("%2C", ",").Replace("%23", "#")
+                .ToString();
+            return HEXCODE.Replace(str, s => s.Value.ToLower());
+        }
 
         internal static string UrlEncoded(this string str)
         {
-            return HttpUtility.UrlEncode(str, new UTF8Encoding());
+            return Uri.EscapeDataString(str);
         }
 
         internal static string UrlDecoded(this string str)
         {
-            return HttpUtility.UrlDecode(str, new UTF8Encoding(false, true));
+            return Uri.UnescapeDataString(str);
         }
 
         //  MATCH FUNCTIONS
