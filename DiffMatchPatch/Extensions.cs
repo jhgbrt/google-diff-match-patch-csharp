@@ -25,7 +25,8 @@ namespace DiffMatchPatch
 {
     internal static class Extensions
     {
-        internal static List<T> Splice<T>(this List<T> input, int start, int count, params T[] objects) => input.Splice(start, count, (IEnumerable<T>) objects);
+        internal static void Splice<T>(this List<T> input, int start, int count, params T[] objects) 
+            => input.Splice(start, count, (IEnumerable<T>) objects);
 
         /// <summary>
         /// replaces [count] entries starting at index [start] with the given [objects]
@@ -35,13 +36,10 @@ namespace DiffMatchPatch
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <param name="objects"></param>
-        /// <returns>the deleted objects</returns>
-        internal static List<T> Splice<T>(this List<T> input, int start, int count, IEnumerable<T> objects)
+        internal static void Splice<T>(this List<T> input, int start, int count, IEnumerable<T> objects)
         {
-            var deletedRange = input.GetRange(start, count);
             input.RemoveRange(start, count);
             input.InsertRange(start, objects);
-            return deletedRange;
         }
     }
 }
