@@ -71,7 +71,7 @@ Represent a list of diffs in a pretty html format:
 
     var html = diffs.PrettyHtml();
 
-Transform a list of diffs into a string representation of the operations required to transform text1 into text2. E.g. `=4\t-1\t+ing` would transform 'skype' to 'skying' (keep 4 chars, delete 1 char, insert 'ing'). Operations are tab-separated. Inserted text is escaped using %xx notation.
+Transform a list of diffs into a string representation of the operations required to transform text1 into text2. E.g. `=4\t-1\t+ing` would transform 'skype' to 'skyping' (keep 4 chars, delete 1 char, insert 'ing'). Operations are tab-separated. Inserted text is escaped using %xx notation.
 
     var delta = diffs.ToDelta();
 
