@@ -62,32 +62,4 @@ namespace DiffMatchPatch.Tests
             CollectionAssert.AreEqual(expected, result);
         }
     }
-    [TestClass]
-    public class LineToCharCompressorTests
-    {
-        [TestMethod]
-        public void Compress_MoreThan65535Lines_DecompressesCorrectly()
-        {
-            // More than 65536 to verify any 16-bit limitation.
-            var lineList = new StringBuilder();
-            for (int i = 0; i < 66000; i++)
-            {
-                lineList.Append(i + "\n");
-            }
-            var chars = lineList.ToString();
-
-            LineToCharCompressor compressor = new LineToCharCompressor();
-
-            var result = compressor.Compress(chars, sizeof(char));
-            var decompressed = compressor.Decompress(result);
-
-            Assert.AreEqual(chars.Length, decompressed.Length);
-            for (int i = 0; i < chars.Length; i++)
-            {
-                Assert.AreEqual(chars[i], decompressed[i]);
-            }
-
-        }
-
-    }
 }

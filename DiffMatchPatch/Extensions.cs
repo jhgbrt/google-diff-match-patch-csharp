@@ -43,32 +43,5 @@ namespace DiffMatchPatch
             input.InsertRange(start, objects);
             return deletedRange;
         }
-
-        internal static IEnumerable<string> SplitLines(this string text, int max)
-        {
-            var count = 0;
-            var lineStart = 0;
-            var lineEnd = -1;
-            while (lineEnd < text.Length - 1 && count < max)
-            {
-                count++;
-                if (count == max)
-                {
-                    yield return text.Substring(lineStart);
-                }
-                else
-                {
-                    lineEnd = text.IndexOf('\n', lineStart);
-                    if (lineEnd == -1)
-                    {
-                        lineEnd = text.Length - 1;
-                    }
-                    var line = text.Substring(lineStart, lineEnd + 1 - lineStart);
-                    yield return line;
-                    lineStart = lineEnd + 1;
-                }
-            }
-        }
     }
-
 }

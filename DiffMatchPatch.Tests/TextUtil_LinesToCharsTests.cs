@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -14,8 +15,8 @@ namespace DiffMatchPatch.Tests
             var compressor = new LineToCharCompressor();
             var result1 = compressor.Compress("alpha\nbeta\nalpha\n");
             var result2 = compressor.Compress("beta\nalpha\nbeta\n");
-            Assert.AreEqual("\u0001\u0002\u0001", result1);
-            Assert.AreEqual("\u0002\u0001\u0002", result2);
+            Assert.AreEqual("\u0000\u0001\u0000", result1);
+            Assert.AreEqual("\u0001\u0000\u0001", result2);
         }
 
         [TestMethod]
@@ -31,7 +32,7 @@ namespace DiffMatchPatch.Tests
         {
             var d = new LineToCharCompressor();
             var result = d.Compress("a");
-            Assert.AreEqual("\u0001", result);
+            Assert.AreEqual("\u0000", result);
         }
         
         [TestMethod]
@@ -39,7 +40,7 @@ namespace DiffMatchPatch.Tests
         {
             var d = new LineToCharCompressor();
             var result = d.Compress("line1\r\nline2\r\n");
-            Assert.AreEqual("\u0001\u0002", result);
+            Assert.AreEqual("\u0000\u0001", result);
         }
 
         [TestMethod]
@@ -57,7 +58,7 @@ namespace DiffMatchPatch.Tests
         {
             var compressor = new LineToCharCompressor();
             var result = compressor.Compress("a");
-            Assert.AreEqual("\u0001", result);
+            Assert.AreEqual("\u0000", result);
         }
 
         [TestMethod]
@@ -67,8 +68,8 @@ namespace DiffMatchPatch.Tests
             var result1 = compressor.Compress("a");
             var result2 = compressor.Compress("b");
 
-            Assert.AreEqual("\u0001", result1);
-            Assert.AreEqual("\u0002", result2);
+            Assert.AreEqual("\u0000", result1);
+            Assert.AreEqual("\u0001", result2);
         }
 
         [TestMethod]
@@ -78,7 +79,7 @@ namespace DiffMatchPatch.Tests
             var n = 300;
             var lineList = new StringBuilder();
             var charList = new StringBuilder();
-            for (var x = 1; x < n + 1; x++)
+            for (var x = 0; x < n; x++)
             {
                 lineList.Append(x + "\n");
                 charList.Append(Convert.ToChar(x));
@@ -94,6 +95,51 @@ namespace DiffMatchPatch.Tests
             Assert.AreEqual(chars, result);
         }
 
+        [TestMethod]
+        public void Compress_MoreThan65535Lines_DecompressesCorrectly()
+        {
+            // More than 65536 to verify any 16-bit limitation.
+            var lineList = new StringBuilder();
+            for (int i = 0; i < 66000; i++)
+            {
+                lineList.Append(i + "\n");
+            }
+            var chars = lineList.ToString();
 
+            LineToCharCompressor compressor = new LineToCharCompressor();
+
+            var result = compressor.Compress(chars, sizeof(char));
+            var decompressed = compressor.Decompress(result);
+
+            AssertEqual(chars, decompressed);
+        }
+
+        private static void AssertEqual(string expected, string result)
+        {
+            Assert.AreEqual(expected.Length, result.Length);
+            for (int i = 0; i < expected.Length; i++)
+            {
+                if (expected[i]!=result[i])
+                    Assert.Fail($"strings differ at position {i}");
+            }
+        }
+
+        [TestMethod]
+        public void MultipleTexts()
+        {
+            var text1 = Enumerable.Range(1, 70000).Aggregate(new StringBuilder(), (sb, i) => sb.Append(i).AppendLine()).ToString();
+            var text2 = Enumerable.Range(20000, 999999).Aggregate(new StringBuilder(), (sb, i) => sb.Append(i).AppendLine()).ToString();
+
+            var compressor = new LineToCharCompressor();
+
+            var compressed1 = compressor.Compress(text1, 40000);
+            var compressed2 = compressor.Compress(text2);
+
+            var decompressed1 = compressor.Decompress(compressed1);
+            var decompressed2 = compressor.Decompress(compressed2);
+
+            AssertEqual(text1, decompressed1);
+            AssertEqual(text2, decompressed2);
+        }
     }
 }
