@@ -24,6 +24,7 @@ See also the unit tests but here are some typical scenarios:
                 "mutationem consuetudium lectorum. Mirum est notare quam littera gothica, quam nunc putamus \r\n" +
                 "parum claram, anteposuerit litterarum formas humanitatis per seacula quarta decima et quinta \r\n" +
                 "decima. Eodem modo typi, qui nunc nobis videntur parum clari, fiant sollemnes in futurum.";
+
     var text2 = "Lorem ipsum dolor sit amet, adipiscing elit, \r\n" +
                 "sed diam nonummy nibh euismod tincidunt ut laoreet dolore vobiscum magna \r\n" +
                 "aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci \r\n" +
@@ -55,7 +56,6 @@ Parse a textual representation of patches and return a List of Patch objects:
 
     List<Patch> patches = PatchList.Parse(textualRepresentation);
 
-
 Apply a list of patches to a source text:
 
     (string newText, bool[] results) = patches.Apply(text1);
@@ -71,8 +71,7 @@ Represent a list of diffs in a pretty html format:
 
     var html = diffs.PrettyHtml();
 
-Transform a list of diffs into a string representation of the operations required to transform text1 into text2. 
-E.g. =3\t-2\t+ing  -> Keep 3 chars, delete 2 chars, insert 'ing'. Operations are tab-separated.  Inserted text is escaped using %xx notation.
+Transform a list of diffs into a string representation of the operations required to transform text1 into text2. E.g. `=4\t-1\t+ing` would transform 'skype' to 'skying' (keep 4 chars, delete 1 char, insert 'ing'). Operations are tab-separated. Inserted text is escaped using %xx notation.
 
     var delta = diffs.ToDelta();
 
