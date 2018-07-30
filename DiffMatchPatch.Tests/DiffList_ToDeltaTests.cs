@@ -104,5 +104,23 @@ namespace DiffMatchPatch.Tests
             CollectionAssert.AreEqual(expected, actual.ToList(), "diff_fromDelta: Unchanged characters.");
         }
 
+        [TestMethod]
+        public void Delta_LargeString()
+        {
+
+            // 160 kb string.
+            string a = "abcdefghij";
+            for (int i = 0; i < 14; i++)
+            {
+                a += a;
+            }
+            var diffs2 = new List<Diff> { Diff.Insert(a) };
+            var delta = diffs2.ToDelta();
+            Assert.AreEqual("+" + a, delta);
+
+            // Convert delta string into a diff.
+            CollectionAssert.AreEqual(diffs2, DiffList.FromDelta("", delta).ToList(), "diff_fromDelta: 160kb string.");
+
+        }
     }
 }

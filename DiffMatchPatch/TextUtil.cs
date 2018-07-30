@@ -216,33 +216,36 @@ namespace DiffMatchPatch
         }
         private static Regex HEXCODE = new Regex("%[0-9A-F][0-9A-F]");
 
+       
         /// <summary>
-        /// Unescape selected chars for compatibility with JavaScript's encodeURI.
-        /// In speed critical applications this could be dropped since the
-        /// receiving application will certainly decode these fine.
-        /// Note that this function is case-sensitive.  Thus "%3F" would not be
-        /// unescaped.  But this is ok because it is only called with the output of
-        /// Uri.EscapeDataString which returns lowercase hex.
-        /// 
-        /// Example: "%3f" -> "?", "%24" -> "$", etc.</summary>
-        /// <param name="str"></param>
-        /// <returns></returns>
-        internal static string UnescapeForEncodeUriCompatability(this string str)
-        {
-             str = new StringBuilder(str)
-                .Replace("%20", " ").Replace("%21", "!").Replace("%2A", "*")
-                .Replace("%27", "'").Replace("%28", "(").Replace("%29", ")")
-                .Replace("%3B", ";").Replace("%2F", "/").Replace("%3F", "?")
-                .Replace("%3A", ":").Replace("%40", "@").Replace("%26", "&")
-                .Replace("%3D", "=").Replace("%2B", "+").Replace("%24", "$")
-                .Replace("%2C", ",").Replace("%23", "#")
-                .ToString();
-            return HEXCODE.Replace(str, s => s.Value.ToLower());
-        }
-
+        ///  Encodes a string with URI-style % escaping.
+        /// Compatible with JavaScript's encodeURI function.
+        /// </summary>
         internal static string UrlEncoded(this string str)
         {
-            return Uri.EscapeDataString(str);
+            // TODO verify if this is the right way (probably should use HttpUtility here)
+
+            int MAX_LENGTH = 0xFFEF;
+            // C# throws a System.UriFormatException if string is too long.
+            // Split the string into 64kb chunks.
+            StringBuilder sb = new StringBuilder();
+            int index = 0;
+            while (index + MAX_LENGTH < str.Length)
+            {
+                sb.Append(Uri.EscapeDataString(str.Substring(index, MAX_LENGTH)));
+                index += MAX_LENGTH;
+            }
+            sb.Append(Uri.EscapeDataString(str.Substring(index)));
+            // C# is overzealous in the replacements.  Walk back on a few.
+            sb = sb.Replace('+', ' ').Replace("%20", " ").Replace("%21", "!")
+                .Replace("%2A", "*").Replace("%27", "'").Replace("%28", "(")
+                .Replace("%29", ")").Replace("%3B", ";").Replace("%2F", "/")
+                .Replace("%3F", "?").Replace("%3A", ":").Replace("%40", "@")
+                .Replace("%26", "&").Replace("%3D", "=").Replace("%2B", "+")
+                .Replace("%24", "$").Replace("%2C", ",").Replace("%23", "#");
+            // C# uses uppercase hex codes, JavaScript uses lowercase.
+
+            return HEXCODE.Replace(sb.ToString(), s => s.Value.ToLower());
         }
 
         internal static string UrlDecoded(this string str)

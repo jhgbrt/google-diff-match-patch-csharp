@@ -133,11 +133,11 @@ namespace DiffMatchPatch
                 from aDiff in diffs
                 let sign = aDiff.Operation.ToDelta()
                 let textToAppend = aDiff.Operation == Operation.Insert
-                    ? aDiff.Text.UrlEncoded().Replace('+', ' ')
+                    ? aDiff.Text.UrlEncoded()
                     : aDiff.Text.Length.ToString()
                 select string.Concat(sign, textToAppend);
 
-            var delta = string.Join("\t", s).UnescapeForEncodeUriCompatability();
+            var delta = string.Join("\t", s);
             return delta;
         }
 

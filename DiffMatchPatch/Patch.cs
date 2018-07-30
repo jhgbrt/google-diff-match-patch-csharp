@@ -67,10 +67,10 @@ namespace DiffMatchPatch
             foreach (var aDiff in Diffs)
             {
                 text.Append((char)aDiff.Operation);
-                text.Append(aDiff.Text.UrlEncoded().Replace('+', ' ')).Append("\n");
+                text.Append(aDiff.Text.UrlEncoded()).Append("\n");
             }
 
-            return text.ToString().UnescapeForEncodeUriCompatability();
+            return text.ToString();
         }
 
         internal Patch Copy()
