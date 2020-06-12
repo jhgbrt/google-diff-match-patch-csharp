@@ -1,5 +1,5 @@
-﻿namespace Original {
-/*
+﻿namespace Original
+{/*
  * Diff Match and Patch -- Test Harness
  * Copyright 2018 The diff-match-patch Authors.
  * https://github.com/google/diff-match-patch
@@ -17,14 +17,14 @@
  * limitations under the License.
  */
 
-/*
- * To compile with Mono:
- *   mcs DiffMatchPatchTest.cs ../DiffMatchPatch.cs
- * To run with Mono:
- *   mono DiffMatchPatchTest.exe
-*/
+    /*
+     * To compile with Mono:
+     *   mcs DiffMatchPatchTest.cs ../DiffMatchPatch.cs
+     * To run with Mono:
+     *   mono DiffMatchPatchTest.exe
+    */
 
-using DiffMatchPatch;
+    using DiffMatchPatch.Original;
 using System.Collections.Generic;
 using System;
 using System.Text;
@@ -1228,6 +1228,5 @@ public class diff_match_patchTest : diff_match_patch {
 
     Console.WriteLine("All tests passed.");
   }
-  
 }
-} // namespace Original
+}
