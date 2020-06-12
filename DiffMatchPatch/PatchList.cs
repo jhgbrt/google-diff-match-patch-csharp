@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using static DiffMatchPatch.Operation;
 
 namespace DiffMatchPatch
 {
@@ -249,21 +250,21 @@ namespace DiffMatchPatch
                             var index1 = 0;
                             foreach (var aDiff in aPatch.Diffs)
                             {
-                                if (aDiff.Operation != Operation.Equal)
+                                if (aDiff.Operation != Equal)
                                 {
                                     var index2 = diffs.FindEquivalentLocation2(index1);
-                                    if (aDiff.Operation == Operation.Insert)
+                                    if (aDiff.Operation == Insert)
                                     {
                                         // Insertion
                                         text = text.Insert(startLoc + index2, aDiff.Text);
                                     }
-                                    else if (aDiff.Operation == Operation.Delete)
+                                    else if (aDiff.Operation == Delete)
                                     {
                                         // Deletion
                                         text = text.Remove(startLoc + index2, diffs.FindEquivalentLocation2(index1 + aDiff.Text.Length) - index2);
                                     }
                                 }
-                                if (aDiff.Operation != Operation.Delete)
+                                if (aDiff.Operation != Delete)
                                 {
                                     index1 += aDiff.Text.Length;
                                 }
@@ -318,7 +319,7 @@ namespace DiffMatchPatch
                     {
                         var diffType = diffs[0].Operation;
                         var diffText = diffs[0].Text;
-                        if (diffType == Operation.Insert)
+                        if (diffType == Insert)
                         {
                             // Insertions are harmless.
                             patch.Length2 += diffText.Length;
@@ -327,8 +328,8 @@ namespace DiffMatchPatch
                             diffs.RemoveAt(0);
                             empty = false;
                         }
-                        else if (diffType == Operation.Delete && patch.Diffs.Count == 1
-                                 && patch.Diffs.First().Operation == Operation.Equal
+                        else if (diffType == Delete && patch.Diffs.Count == 1
+                                 && patch.Diffs.First().Operation == Equal
                                  && diffText.Length > 2 * patchSize)
                         {
                             // This is a large deletion.  Let it pass in one chunk.
@@ -345,7 +346,7 @@ namespace DiffMatchPatch
                                 patchSize - patch.Length1 - patchMargin));
                             patch.Length1 += diffText.Length;
                             start1 += diffText.Length;
-                            if (diffType == Operation.Equal)
+                            if (diffType == Equal)
                             {
                                 patch.Length2 += diffText.Length;
                                 start2 += diffText.Length;
@@ -379,7 +380,7 @@ namespace DiffMatchPatch
                         patch.Length1 += postcontext.Length;
                         patch.Length2 += postcontext.Length;
                         var lastDiff = patch.Diffs.Last();
-                        if (patch.Diffs.Any() && lastDiff.Operation == Operation.Equal)
+                        if (patch.Diffs.Any() && lastDiff.Operation == Equal)
                         {
                             patch.Diffs[patch.Diffs.Count - 1] = lastDiff.Replace(lastDiff.Text + postcontext);
                         }

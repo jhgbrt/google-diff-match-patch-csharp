@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using static DiffMatchPatch.Operation;
 
 namespace DiffMatchPatch
 {
@@ -100,7 +101,7 @@ namespace DiffMatchPatch
             if (i != -1)
             {
                 // Shorter text is inside the longer text (speedup).
-                var op = text1.Length > text2.Length ? Operation.Delete : Operation.Insert;
+                var op = text1.Length > text2.Length ? Delete : Insert;
                 diffs.Add(Diff.Create(op, longtext.Substring(0, i)));
                 diffs.Add(Diff.Equal(shorttext));
                 diffs.Add(Diff.Create(op, longtext.Substring(i + shorttext.Length)));
@@ -177,15 +178,15 @@ namespace DiffMatchPatch
             {
                 switch (diffs[pointer].Operation)
                 {
-                    case Operation.Insert:
+                    case Insert:
                         countInsert++;
                         insertBuilder.Append(diffs[pointer].Text);
                         break;
-                    case Operation.Delete:
+                    case Delete:
                         countDelete++;
                         deleteBuilder.Append(diffs[pointer].Text);
                         break;
-                    case Operation.Equal:
+                    case Equal:
                         // Upon reaching an equality, check for prior redundancies.
                         if (countDelete >= 1 && countInsert >= 1)
                         {

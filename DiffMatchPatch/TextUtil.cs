@@ -14,7 +14,7 @@ namespace DiffMatchPatch
         /// <param name="i1">start index of substring in text1</param>
         /// <param name="i2">start index of substring in text2</param>
         /// <returns>The number of characters common to the start of each string.</returns>
-        internal static int CommonPrefix(string text1, string text2, int i1= 0, int i2 = 0)
+        internal static int CommonPrefix(string text1, string text2, int i1 = 0, int i2 = 0)
         {
             var l1 = text1.Length - i1;
             var l2 = text2.Length - i2;

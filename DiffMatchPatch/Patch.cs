@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using static DiffMatchPatch.Operation;
 
 namespace DiffMatchPatch
 {
@@ -30,34 +31,23 @@ namespace DiffMatchPatch
         /// <returns></returns>
         public override string ToString()
         {
-            string coords1, coords2;
-            if (Length1 == 0)
-            {
-                coords1 = Start1 + ",0";
-            }
-            else if (Length1 == 1)
-            {
-                coords1 = Convert.ToString(Start1 + 1);
-            }
-            else
-            {
-                coords1 = Start1 + 1 + "," + Length1;
-            }
-            switch (Length2)
-            {
-                case 0:
-                    coords2 = Start2 + ",0";
-                    break;
-                case 1:
-                    coords2 = Convert.ToString(Start2 + 1);
-                    break;
-                default:
-                    coords2 = Start2 + 1 + "," + Length2;
-                    break;
-            }
 
-            var text = new StringBuilder();
-            text.Append("@@ -")
+            var coords1 = Length1 switch
+            {
+                0 => Start1 + ",0",
+                1 => Convert.ToString(Start1 + 1),
+                _ => Start1 + 1 + "," + Length1
+            };
+
+            var coords2 = Length2 switch
+            {
+                0 => Start2 + ",0",
+                1 => Convert.ToString(Start2 + 1),
+                _ => Start2 + 1 + "," + Length2
+            };
+
+            var text = new StringBuilder()
+                .Append("@@ -")
                 .Append(coords1)
                 .Append(" +")
                 .Append(coords2)
@@ -196,7 +186,7 @@ namespace DiffMatchPatch
             var postpatchText = text1;
             foreach (var aDiff in diffs)
             {
-                if (!patch.Diffs.Any() && aDiff.Operation != Operation.Equal)
+                if (!patch.Diffs.Any() && aDiff.Operation != Equal)
                 {
                     // A new patch starts here.
                     patch.Start1 = charCount1;
@@ -205,18 +195,18 @@ namespace DiffMatchPatch
 
                 switch (aDiff.Operation)
                 {
-                    case Operation.Insert:
+                    case Insert:
                         patch.Diffs.Add(aDiff);
                         patch.Length2 += aDiff.Text.Length;
                         postpatchText = postpatchText.Insert(charCount2, aDiff.Text);
                         break;
-                    case Operation.Delete:
+                    case Delete:
                         patch.Length1 += aDiff.Text.Length;
                         patch.Diffs.Add(aDiff);
                         postpatchText = postpatchText.Remove(charCount2,
                            aDiff.Text.Length);
                         break;
-                    case Operation.Equal:
+                    case Equal:
                         if (aDiff.Text.Length <= 2 * patchMargin
                             && patch.Diffs.Any() && aDiff != diffs.Last())
                         {
@@ -246,11 +236,11 @@ namespace DiffMatchPatch
                 }
 
                 // Update the current character count.
-                if (aDiff.Operation != Operation.Insert)
+                if (aDiff.Operation != Insert)
                 {
                     charCount1 += aDiff.Text.Length;
                 }
-                if (aDiff.Operation != Operation.Delete)
+                if (aDiff.Operation != Delete)
                 {
                     charCount2 += aDiff.Text.Length;
                 }
@@ -267,7 +257,7 @@ namespace DiffMatchPatch
 
         public void AddPaddingBeforeFirstDiff(string nullPadding)
         {
-            if (Diffs.Count == 0 || Diffs[0].Operation != Operation.Equal)
+            if (Diffs.Count == 0 || Diffs[0].Operation != Equal)
             {
                 // Add nullPadding equality.
                 Diffs.Insert(0, Diff.Equal(nullPadding));
@@ -292,7 +282,7 @@ namespace DiffMatchPatch
 
         public void AddPaddingAfterLastDiff(string nullPadding)
         {
-            if (Diffs.Count == 0 || Diffs.Last().Operation != Operation.Equal)
+            if (Diffs.Count == 0 || Diffs.Last().Operation != Equal)
             {
                 // Add nullPadding equality.
                 Diffs.Add(Diff.Equal(nullPadding));
