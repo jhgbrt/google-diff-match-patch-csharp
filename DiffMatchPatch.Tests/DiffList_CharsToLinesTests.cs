@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace DiffMatchPatch.Tests
 {
-    [TestClass]
+    
     public class DiffList_CharsToLinesTests
     {
-        [TestMethod]
+        [Fact]
         public void CharsToLines_ValidCharsWithCorrespondingLines_RestoresDiffsCorrectly()
         {
             // Convert chars up to lines.
@@ -25,10 +25,10 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("beta\nalpha\nbeta\n")
             };
             var result = diffs.CharsToLines(tmpVector).ToList();
-            CollectionAssert.AreEqual(expected, result);
+            Assert.Equal(expected, result);
         }
 
-        [TestMethod]
+        [Fact]
         public void CharsToLines_MoreThan256Chars_RestoresDiffCorrectly()
         {
 
@@ -43,10 +43,10 @@ namespace DiffMatchPatch.Tests
                 lineList.Append(x + "\n");
                 charList.Append(Convert.ToChar(x));
             }
-            Assert.AreEqual(n, tmpVector.Count);
+            Assert.Equal(n, tmpVector.Count);
             var lines = lineList.ToString();
             var chars = charList.ToString();
-            Assert.AreEqual(n, chars.Length);
+            Assert.Equal(n, chars.Length);
             tmpVector.Insert(0, "");
             var diffs = new []
             {
@@ -59,7 +59,7 @@ namespace DiffMatchPatch.Tests
             {
                 Diff.Delete(lines)
             };
-            CollectionAssert.AreEqual(expected, result);
+            Assert.Equal(expected, result);
         }
     }
 }

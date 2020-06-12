@@ -1192,7 +1192,7 @@ public class diff_match_patchTest : diff_match_patch {
     throw new ArgumentException(String.Format("assertFail fail:\n{0}", error_msg));
   }
 
-  public static void Main(string[] args) {
+  public static void OriginalMain(string[] args) {
     diff_match_patchTest dmp = new diff_match_patchTest();
 
     dmp.diff_commonPrefixTest();
@@ -1228,5 +1228,6 @@ public class diff_match_patchTest : diff_match_patch {
 
     Console.WriteLine("All tests passed.");
   }
+  
 }
 } // namespace Original

@@ -1,23 +1,23 @@
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace DiffMatchPatch.Tests
 {
-    [TestClass]
+    
     public class DiffList_CleanupSemanticLosslessTests
     {
-        [TestMethod]
+        [Fact]
         public void EmptyList_WhenCleaned_RemainsEmptyList()
         {
             // Slide Diffs to match logical boundaries.
             // Null case.
             var diffs = new List<Diff>();
             diffs.CleanupSemanticLossless();
-            CollectionAssert.AreEqual(new List<Diff>(), diffs);
+            Assert.Equal(new List<Diff>(), diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void BlankLines()
         {
             // Blank lines.
@@ -28,7 +28,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("\r\nEEE")
             };
             diffs.CleanupSemanticLossless();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Equal("AAA\r\n\r\n"),
                 Diff.Insert("BBB\r\nDDD\r\n\r\n"),
@@ -36,7 +36,7 @@ namespace DiffMatchPatch.Tests
             }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void NoCleanup()
         {
             // Line boundaries.
@@ -49,7 +49,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("HHH III"),
             };
             diffs.CleanupSemanticLossless();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Equal("AAA\r\n"),
                 Diff.Insert("BBB DDD\r\n"),
@@ -60,7 +60,7 @@ namespace DiffMatchPatch.Tests
 
         }
 
-        [TestMethod]
+        [Fact]
         public void LineBoundaries()
         {
 
@@ -72,7 +72,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal(" EEE")
             };
             diffs.CleanupSemanticLossless();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Equal("AAA\r\n"),
                 Diff.Insert("BBB DDD\r\n"),
@@ -80,7 +80,7 @@ namespace DiffMatchPatch.Tests
             }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void WordBoundaries()
         {
             var diffs = new List<Diff>
@@ -90,7 +90,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("at.")
             };
             diffs.CleanupSemanticLossless();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Equal("The "),
                 Diff.Insert("cow and the "),
@@ -98,7 +98,7 @@ namespace DiffMatchPatch.Tests
             }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void AlphaNumericBoundaries()
         {
             // Alphanumeric boundaries.
@@ -109,7 +109,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("at.")
             };
             diffs.CleanupSemanticLossless();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Equal("The-"),
                 Diff.Insert("cow-and-the-"),
@@ -117,7 +117,7 @@ namespace DiffMatchPatch.Tests
             }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void HittingTheStart()
         {
             var diffs = new List<Diff>
@@ -127,14 +127,14 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("ax")
             };
             diffs.CleanupSemanticLossless();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("a"),
                 Diff.Equal("aax")
             }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void HittingTheEnd()
         {
             var diffs = new List<Diff>
@@ -144,14 +144,14 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("a")
             };
             diffs.CleanupSemanticLossless();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Equal("xaa"),
                 Diff.Delete("a")
             }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void SentenceBoundaries()
         {
             var diffs = new List<Diff>
@@ -161,7 +161,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("yyy.")
             };
             diffs.CleanupSemanticLossless();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Equal("The xxx."),
                 Diff.Insert(" The zzz."),

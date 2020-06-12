@@ -1,20 +1,20 @@
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace DiffMatchPatch.Tests
 {
-    [TestClass]
+    
     public class DiffList_CleanupEfficiencyTests
     {
-        [TestMethod]
+        [Fact]
         public void EmptyList()
         {
             var diffs = new List<Diff>();
             diffs.CleanupEfficiency();
-            CollectionAssert.AreEqual(new List<Diff>(), diffs);
+            Assert.Equal(new List<Diff>(), diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void NoElimination()
         {
             var diffs = new List<Diff>
@@ -26,7 +26,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("34")
             };
             diffs.CleanupEfficiency();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("ab"),
                 Diff.Insert("12"),
@@ -36,7 +36,7 @@ namespace DiffMatchPatch.Tests
             }, diffs);            
         }
 
-        [TestMethod]
+        [Fact]
         public void FourEditElimination()
         {
             var diffs = new List<Diff>
@@ -48,14 +48,14 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("34")
             };
             diffs.CleanupEfficiency();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abxyzcd"),
                 Diff.Insert("12xyz34")
             }, diffs);            
         }
 
-        [TestMethod]
+        [Fact]
         public void ThreeEditElimination()
         {
             var diffs = new List<Diff>
@@ -66,14 +66,14 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("34")
             };
             diffs.CleanupEfficiency();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("xcd"),
                 Diff.Insert("12x34")
             }, diffs);            
         }
 
-        [TestMethod]
+        [Fact]
         public void BackpassElimination()
         {
             var diffs = new List<Diff>
@@ -87,14 +87,14 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("56")
             };
             diffs.CleanupEfficiency();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abxyzcd"),
                 Diff.Insert("12xy34z56")
             }, diffs);            
         }
 
-        [TestMethod]
+        [Fact]
         public void HighCostElimination()
         {
             short highDiffEditCost = 5;
@@ -108,7 +108,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("34")
             };
             diffs.CleanupEfficiency(highDiffEditCost);
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abwxyzcd"),
                 Diff.Insert("12wxyz34")

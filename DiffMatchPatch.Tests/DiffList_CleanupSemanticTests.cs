@@ -1,20 +1,20 @@
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace DiffMatchPatch.Tests
 {
-    [TestClass]
+    
     public class DiffList_CleanupSemanticTests
     {
-        [TestMethod]
+        [Fact]
         public void EmptyList()
         {
             var diffs = new List<Diff>();
             diffs.CleanupSemantic();
-            CollectionAssert.AreEqual(new List<Diff>(), diffs);
+            Assert.Equal(new List<Diff>(), diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void NoEliminiation1()
         {
             var diffs = new List<Diff>
@@ -25,7 +25,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Delete("e")
             };
             diffs.CleanupSemantic();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("ab"),
                 Diff.Insert("cd"),
@@ -34,7 +34,7 @@ namespace DiffMatchPatch.Tests
             }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void NoElimination2()
         {
             var diffs = new List<Diff>
@@ -45,7 +45,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Delete("wxyz")
             };
             diffs.CleanupSemantic();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abc"),
                 Diff.Insert("ABC"),
@@ -54,7 +54,7 @@ namespace DiffMatchPatch.Tests
             }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void SimpleElimination()
         {
             var diffs = new List<Diff>
@@ -64,7 +64,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Delete("c")
             };
             diffs.CleanupSemantic();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abc"),
                 Diff.Insert("b")
@@ -73,7 +73,7 @@ namespace DiffMatchPatch.Tests
 
         
 
-        [TestMethod]
+        [Fact]
         public void BackpassElimination()
         {
             var diffs = new List<Diff>
@@ -85,7 +85,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("g")
             };
             diffs.CleanupSemantic();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abcdef"),
                 Diff.Insert("cdfg")
@@ -93,7 +93,7 @@ namespace DiffMatchPatch.Tests
 
         }
 
-        [TestMethod]
+        [Fact]
         public void MultipleEliminations()
         {
             var diffs = new List<Diff>
@@ -109,14 +109,14 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("2")
             };
             diffs.CleanupSemantic();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("AB_AB"),
                 Diff.Insert("1A2_1A2")
             }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void WordBoundaries()
         {
             var diffs = new List<Diff>
@@ -126,7 +126,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("at.")
             };
             diffs.CleanupSemantic();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Equal("The "),
                 Diff.Delete("cow and the "),
@@ -134,7 +134,7 @@ namespace DiffMatchPatch.Tests
             }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void NoOverlapElimination()
         {
             var diffs = new List<Diff>
@@ -143,14 +143,14 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("xxdef")
             };
             diffs.CleanupSemantic();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abcxx"),
                 Diff.Insert("xxdef")
             }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void OverlapElimination()
         {
             var diffs = new List<Diff>
@@ -159,7 +159,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("xxxdef")
             };
             diffs.CleanupSemantic();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abc"),
                 Diff.Equal("xxx"),
@@ -167,7 +167,7 @@ namespace DiffMatchPatch.Tests
             }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReverseOverlapElimination()
         {
             var diffs = new List<Diff>
@@ -176,7 +176,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("defxxx")
             };
             diffs.CleanupSemantic();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Insert("def"),
                 Diff.Equal("xxx"),
@@ -184,7 +184,7 @@ namespace DiffMatchPatch.Tests
             }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void TwoOverlapEliminations()
         {
             var diffs = new List<Diff>
@@ -196,7 +196,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("3BC")
             };
             diffs.CleanupSemantic();
-            CollectionAssert.AreEqual(new List<Diff>
+            Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abcd"),
                 Diff.Equal("1212"),

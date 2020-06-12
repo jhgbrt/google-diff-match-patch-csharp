@@ -1,12 +1,12 @@
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace DiffMatchPatch.Tests
 {
-    [TestClass]
+    
     public class DiffList_CleanupMergeTests
     {
-        [TestMethod]
+        [Fact]
         public void CleanupMerge_EmptyDiffList_ReturnsEmptyDiffList()
         {
             // Cleanup a messy diff.
@@ -15,10 +15,10 @@ namespace DiffMatchPatch.Tests
             result.CleanupMerge();
             var expected = new List<Diff>();
             
-            CollectionAssert.AreEqual(expected, result);
+            Assert.Equal(expected, result);
         }
 
-        [TestMethod]
+        [Fact]
         public void CleanupMerge_AlreadyCleaned_ReturnsSameList()
         {
             var result = new List<Diff> { Diff.Equal("a"), Diff.Delete("b"), Diff.Insert("c") };
@@ -26,34 +26,34 @@ namespace DiffMatchPatch.Tests
             
             var expected = new[] {Diff.Equal("a"), Diff.Delete("b"), Diff.Insert("c")};
 
-            CollectionAssert.AreEqual(expected, result);
+            Assert.Equal(expected, result);
         }
 
-        [TestMethod]
+        [Fact]
         public void SubsequentEqualitiesAreMerged()
         {
             var diffs = new List<Diff> { Diff.Equal("a"), Diff.Equal("b"), Diff.Equal("c") };
             diffs.CleanupMerge();
-            CollectionAssert.AreEqual(new List<Diff> { Diff.Equal("abc") }, diffs);
+            Assert.Equal(new List<Diff> { Diff.Equal("abc") }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void SubsequentDeletesAreMerged()
         {
             var diffs = new List<Diff> { Diff.Delete("a"), Diff.Delete("b"), Diff.Delete("c") };
             diffs.CleanupMerge();
-            CollectionAssert.AreEqual(new List<Diff> { Diff.Delete("abc") }, diffs);
+            Assert.Equal(new List<Diff> { Diff.Delete("abc") }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void SubsequentInsertsAreMerged()
         {
             var diffs = new List<Diff> { Diff.Insert("a"), Diff.Insert("b"), Diff.Insert("c") };
             diffs.CleanupMerge();
-            CollectionAssert.AreEqual(new List<Diff> { Diff.Insert("abc") }, diffs);
+            Assert.Equal(new List<Diff> { Diff.Insert("abc") }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void InterweavedInsertDeletesAreMerged()
         {
 
@@ -68,21 +68,21 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("f")
             };
             diffs.CleanupMerge();
-            CollectionAssert.AreEqual(new List<Diff> { Diff.Delete("ac"), Diff.Insert("bd"), Diff.Equal("ef") }, diffs);
+            Assert.Equal(new List<Diff> { Diff.Delete("ac"), Diff.Insert("bd"), Diff.Equal("ef") }, diffs);
         }
 
 
-        [TestMethod]
+        [Fact]
         public void PrefixSuffixDetection()
         {
 
             // Prefix and suffix detection.
             var diffs = new List<Diff> { Diff.Delete("a"), Diff.Insert("abc"), Diff.Delete("dc") };
             diffs.CleanupMerge();
-            CollectionAssert.AreEqual(
+            Assert.Equal(
                 new List<Diff> { Diff.Equal("a"), Diff.Delete("d"), Diff.Insert("b"), Diff.Equal("c") }, diffs);
         }
-        [TestMethod]
+        [Fact]
         public void PrefixSuffixDetectionWithEqualities()
         {
 
@@ -96,34 +96,34 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("y")
             };
             diffs.CleanupMerge();
-            CollectionAssert.AreEqual(
+            Assert.Equal(
                 new List<Diff> { Diff.Equal("xa"), Diff.Delete("d"), Diff.Insert("b"), Diff.Equal("cy") }, diffs);
         }
         
 
-        [TestMethod]
+        [Fact]
         public void SlideEditLeft()
         {
             // Slide edit left.
             var diffs = new List<Diff> { Diff.Equal("a"), Diff.Insert("ba"), Diff.Equal("c") };
             diffs.CleanupMerge();
-            CollectionAssert.AreEqual(new List<Diff> { Diff.Insert("ab"), Diff.Equal("ac") }, diffs);
+            Assert.Equal(new List<Diff> { Diff.Insert("ab"), Diff.Equal("ac") }, diffs);
         }
 
 
-        [TestMethod]
+        [Fact]
         public void SlideEditRight()
         {
  
             // Slide edit right.
             var diffs = new List<Diff> { Diff.Equal("c"), Diff.Insert("ab"), Diff.Equal("a") };
             diffs.CleanupMerge();
-            CollectionAssert.AreEqual(new List<Diff> { Diff.Equal("ca"), Diff.Insert("ba") }, diffs);
+            Assert.Equal(new List<Diff> { Diff.Equal("ca"), Diff.Insert("ba") }, diffs);
 
         }
 
 
-        [TestMethod]
+        [Fact]
         public void SlideEditLeftRecursive()
         {
             // Slide edit left recursive.
@@ -136,12 +136,12 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("x")
             };
             diffs.CleanupMerge();
-            CollectionAssert.AreEqual(new List<Diff> { Diff.Delete("abc"), Diff.Equal("acx") }, diffs);
+            Assert.Equal(new List<Diff> { Diff.Delete("abc"), Diff.Equal("acx") }, diffs);
 
         }
 
 
-        [TestMethod]
+        [Fact]
         public void SlideEditRightRecursive()
         {
             // Slide edit right recursive.
@@ -154,10 +154,10 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("a")
             };
             diffs.CleanupMerge();
-            CollectionAssert.AreEqual(new List<Diff> { Diff.Equal("xca"), Diff.Delete("cba") }, diffs);
+            Assert.Equal(new List<Diff> { Diff.Equal("xca"), Diff.Delete("cba") }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void EmptyMerge()
         {
             var diffs = new List<Diff>
@@ -167,10 +167,10 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("c")
             };
             diffs.CleanupMerge();
-            CollectionAssert.AreEqual(new List<Diff> { Diff.Insert("a"), Diff.Equal("bc") }, diffs);
+            Assert.Equal(new List<Diff> { Diff.Insert("a"), Diff.Equal("bc") }, diffs);
         }
 
-        [TestMethod]
+        [Fact]
         public void EmptyEquality()
         {
             var diffs = new List<Diff>
@@ -180,7 +180,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("b")
             };
             diffs.CleanupMerge();
-            CollectionAssert.AreEqual(new List<Diff> { Diff.Insert("a"), Diff.Equal("b") }, diffs);
+            Assert.Equal(new List<Diff> { Diff.Insert("a"), Diff.Equal("b") }, diffs);
 
         }
 

@@ -1,15 +1,15 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit;
 using Original;
 
 namespace DiffMatchPatch.Original.Tests
 {
-    [TestClass]
+    
     public class OriginalTests
     {
-        [TestMethod]
+        [Fact]
         public void AllOriginalTestsPass()
         {
-            diff_match_patchTest.Main(null);
+            diff_match_patchTest.OriginalMain(null);
         }
     }
 }

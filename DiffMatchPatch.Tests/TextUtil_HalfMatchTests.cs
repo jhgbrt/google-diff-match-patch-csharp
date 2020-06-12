@@ -1,132 +1,132 @@
 using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace DiffMatchPatch.Tests
 {
-    [TestClass]
+    
     public class TextUtilHalfMatchTests
     {
-        [TestMethod]
+        [Fact]
         public void WhenLeftIsEmptyReturnsEmpty()
         {
             var result = TextUtil.HalfMatch("", "12345");
-            Assert.IsTrue(result.IsEmpty);
+            Assert.True(result.IsEmpty);
         }
 
-        [TestMethod]
+        [Fact]
         public void WhenRightIsEmptyReturnsEmpty()
         {
             var result = TextUtil.HalfMatch("12345", "");
-            Assert.IsTrue(result.IsEmpty);
+            Assert.True(result.IsEmpty);
         }
 
-        [TestMethod]
+        [Fact]
         public void WhenTextDoesNotMatchReturnsNull()
         {
             // No match.
             var result = TextUtil.HalfMatch("1234567890", "abcdef");
-            Assert.IsTrue(result.IsEmpty);
+            Assert.True(result.IsEmpty);
         }
 
-        [TestMethod]
+        [Fact]
         public void WhenSubstringIsLessThanHalfTheOriginalStringReturnsNull()
         {
             var result = TextUtil.HalfMatch("12345", "23");
-            Assert.IsTrue(result.IsEmpty);
+            Assert.True(result.IsEmpty);
         }
 
-        [TestMethod]
+        [Fact]
         public void WhenSubstringIsMoreThanHalfTheOriginalStringReturnsResult1()
         {
 
             var result = TextUtil.HalfMatch("1234567890", "a345678z");
-            Assert.AreEqual(new HalfMatchResult("12", "90", "a", "z", "345678"), result);
+            Assert.Equal(new HalfMatchResult("12", "90", "a", "z", "345678"), result);
         }
 
-        [TestMethod]
+        [Fact]
         public void WhenSubstringIsMoreThanHalfTheOriginalStringReturnsResult2()
         {
             var result = TextUtil.HalfMatch("a345678z", "1234567890");
-            Assert.AreEqual(new HalfMatchResult("a", "z", "12", "90", "345678"), result);
+            Assert.Equal(new HalfMatchResult("a", "z", "12", "90", "345678"), result);
         }
 
-        [TestMethod]
+        [Fact]
         public void WhenSubstringIsMoreThanHalfTheOriginalStringReturnsResult3()
         {
             var result = TextUtil.HalfMatch("abc56789z", "1234567890");
-            Assert.AreEqual(new HalfMatchResult("abc", "z", "1234", "0", "56789"), result);
+            Assert.Equal(new HalfMatchResult("abc", "z", "1234", "0", "56789"), result);
 
         }
 
-        [TestMethod]
+        [Fact]
         public void WhenSubstringIsMoreThanHalfTheOriginalStringReturnsResult4()
         {
             var result = TextUtil.HalfMatch("a23456xyz", "1234567890");
-            Assert.AreEqual(new HalfMatchResult("a", "xyz", "1", "7890", "23456"), result);
+            Assert.Equal(new HalfMatchResult("a", "xyz", "1", "7890", "23456"), result);
         }
 
-        [TestMethod]
+        [Fact]
         public void WhenSubstringIsMoreThanHalfTheOriginalStringMultipleMatchesReturnsLongestSubstring1()
         {
 
             var result = TextUtil.HalfMatch("121231234123451234123121", "a1234123451234z");
-            Assert.AreEqual(new HalfMatchResult("12123", "123121", "a", "z", "1234123451234"), result);
+            Assert.Equal(new HalfMatchResult("12123", "123121", "a", "z", "1234123451234"), result);
 
         }
 
-        [TestMethod]
+        [Fact]
         public void WhenSubstringIsMoreThanHalfTheOriginalStringMultipleMatchesReturnsLongestSubstring2()
         {
             var result = TextUtil.HalfMatch("x-=-=-=-=-=-=-=-=-=-=-=-=", "xx-=-=-=-=-=-=-=");
-            Assert.AreEqual(new HalfMatchResult("", "-=-=-=-=-=", "x", "", "x-=-=-=-=-=-=-="), result);
+            Assert.Equal(new HalfMatchResult("", "-=-=-=-=-=", "x", "", "x-=-=-=-=-=-=-="), result);
         }
 
-        [TestMethod]
+        [Fact]
         public void WhenSubstringIsMoreThanHalfTheOriginalStringMultipleMatchesReturnsLongestSubstring3()
         {
  
             var result = TextUtil.HalfMatch("-=-=-=-=-=-=-=-=-=-=-=-=y", "-=-=-=-=-=-=-=yy");
-            Assert.AreEqual(new HalfMatchResult("-=-=-=-=-=", "", "", "y", "-=-=-=-=-=-=-=y"), result);
+            Assert.Equal(new HalfMatchResult("-=-=-=-=-=", "", "", "y", "-=-=-=-=-=-=-=y"), result);
        }
 
-        [TestMethod]
+        [Fact]
         public void WhenSubstringIsMoreThanHalfTheOriginalStringNonOptimal()
         {
             // Non-optimal halfmatch.
             // Optimal diff would be -q+x=H-i+e=lloHe+Hu=llo-Hew+y not -qHillo+x=HelloHe-w+Hulloy
             var result = TextUtil.HalfMatch("qHilloHelloHew", "xHelloHeHulloy");
-            Assert.AreEqual(new HalfMatchResult("qHillo", "w", "x", "Hulloy", "HelloHe"), result);
+            Assert.Equal(new HalfMatchResult("qHillo", "w", "x", "Hulloy", "HelloHe"), result);
         }
 
-        [TestMethod]
+        [Fact]
         public void diff_halfmatchTest()
         {
             // No match.
-            CollectionAssert.AreEqual(new string[] { "a", "z", "12", "90", "345678" }, diff_halfMatch("a345678z", "1234567890"));
+            Assert.Equal(new string[] { "a", "z", "12", "90", "345678" }, diff_halfMatch("a345678z", "1234567890"));
             return;
 
-            Assert.IsNull(diff_halfMatch("1234567890", "abcdef"));
+            Assert.Null(diff_halfMatch("1234567890", "abcdef"));
 
-            Assert.IsNull(diff_halfMatch("12345", "23"));
+            Assert.Null(diff_halfMatch("12345", "23"));
 
             // Single Match.
-            CollectionAssert.AreEqual(new string[] { "12", "90", "a", "z", "345678" }, diff_halfMatch("1234567890", "a345678z"));
+            Assert.Equal(new string[] { "12", "90", "a", "z", "345678" }, diff_halfMatch("1234567890", "a345678z"));
 
 
-            CollectionAssert.AreEqual(new string[] { "abc", "z", "1234", "0", "56789" }, diff_halfMatch("abc56789z", "1234567890"));
+            Assert.Equal(new string[] { "abc", "z", "1234", "0", "56789" }, diff_halfMatch("abc56789z", "1234567890"));
 
-            CollectionAssert.AreEqual(new string[] { "a", "xyz", "1", "7890", "23456" }, diff_halfMatch("a23456xyz", "1234567890"));
+            Assert.Equal(new string[] { "a", "xyz", "1", "7890", "23456" }, diff_halfMatch("a23456xyz", "1234567890"));
 
             // Multiple Matches.
-            CollectionAssert.AreEqual(new string[] { "12123", "123121", "a", "z", "1234123451234" }, diff_halfMatch("121231234123451234123121", "a1234123451234z"));
+            Assert.Equal(new string[] { "12123", "123121", "a", "z", "1234123451234" }, diff_halfMatch("121231234123451234123121", "a1234123451234z"));
 
-            CollectionAssert.AreEqual(new string[] { "", "-=-=-=-=-=", "x", "", "x-=-=-=-=-=-=-=" }, diff_halfMatch("x-=-=-=-=-=-=-=-=-=-=-=-=", "xx-=-=-=-=-=-=-="));
+            Assert.Equal(new string[] { "", "-=-=-=-=-=", "x", "", "x-=-=-=-=-=-=-=" }, diff_halfMatch("x-=-=-=-=-=-=-=-=-=-=-=-=", "xx-=-=-=-=-=-=-="));
 
-            CollectionAssert.AreEqual(new string[] { "-=-=-=-=-=", "", "", "y", "-=-=-=-=-=-=-=y" }, diff_halfMatch("-=-=-=-=-=-=-=-=-=-=-=-=y", "-=-=-=-=-=-=-=yy"));
+            Assert.Equal(new string[] { "-=-=-=-=-=", "", "", "y", "-=-=-=-=-=-=-=y" }, diff_halfMatch("-=-=-=-=-=-=-=-=-=-=-=-=y", "-=-=-=-=-=-=-=yy"));
 
             // Non-optimal halfmatch.
             // Optimal diff would be -q+x=H-i+e=lloHe+Hu=llo-Hew+y not -qHillo+x=HelloHe-w+Hulloy
-            CollectionAssert.AreEqual(new string[] { "qHillo", "w", "x", "Hulloy", "HelloHe" }, diff_halfMatch("qHilloHelloHew", "xHelloHeHulloy"));
+            Assert.Equal(new string[] { "qHillo", "w", "x", "Hulloy", "HelloHe" }, diff_halfMatch("qHilloHelloHew", "xHelloHeHulloy"));
 
         }
 

@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace DiffMatchPatch.Tests
 {
-    [TestClass]
+    
     public class DiffListTests
     {
-        [TestMethod]
+        [Fact]
         public void DiffPrettyHtmlTest()
         {
 
@@ -18,12 +18,12 @@ namespace DiffMatchPatch.Tests
                 Diff.Delete("<B>b</B>"),
                 Diff.Insert("c&d")
             };
-            Assert.AreEqual(
+            Assert.Equal(
                 "<span>a&para;<br></span><del style=\"background:#ffe6e6;\">&lt;B&gt;b&lt;/B&gt;</del><ins style=\"background:#e6ffe6;\">c&amp;d</ins>",
                 diffs.PrettyHtml());
         }
 
-        [TestMethod]
+        [Fact]
         public void Text1_ReturnsText1()
         {
             var diffs = new List<Diff>
@@ -36,10 +36,10 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("a"),
                 Diff.Equal(" lazy")
             };
-            Assert.AreEqual("jumps over the lazy", diffs.Text1());
+            Assert.Equal("jumps over the lazy", diffs.Text1());
         }
 
-        [TestMethod]
+        [Fact]
         public void Text2_ReturnsText2()
         {
             // Compute the source and destination texts.
@@ -53,10 +53,10 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("a"),
                 Diff.Equal(" lazy")
             };
-            Assert.AreEqual("jumped over a lazy", diffs.Text2());
+            Assert.Equal("jumped over a lazy", diffs.Text2());
         }
 
-        [TestMethod]
+        [Fact]
         public void FindEquivalentLocation2_LocationInEquality_FindsLocation()
         {
 
@@ -67,9 +67,9 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("1234"),
                 Diff.Equal("xyz")
             };
-            Assert.AreEqual(5, diffs.FindEquivalentLocation2(2), "diff_xIndex: Translation on equality.");
+            Assert.Equal(5, diffs.FindEquivalentLocation2(2));
         }
-        [TestMethod]
+        [Fact]
         public void FindEquivalentLocation2_LocationOnDeletion_FindsLocation()
         {
 
@@ -79,10 +79,10 @@ namespace DiffMatchPatch.Tests
                 Diff.Delete("1234"),
                 Diff.Equal("xyz")
             };
-            Assert.AreEqual(1, diffs.FindEquivalentLocation2(3), "diff_xIndex: Translation on deletion.");
+            Assert.Equal(1, diffs.FindEquivalentLocation2(3));
         }
 
-        [TestMethod]
+        [Fact]
         public void Levenshtein_WithTrailingEquality()
         {
 
@@ -92,9 +92,9 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("1234"),
                 Diff.Equal("xyz")
             };
-            Assert.AreEqual(4, diffs.Levenshtein(), "diff_levenshtein: Levenshtein with trailing equality.");
+            Assert.Equal(4, diffs.Levenshtein());
         }
-        [TestMethod]
+        [Fact]
         public void Levenshtein_WithLeadingEquality()
         {
             var diffs = new List<Diff>
@@ -103,10 +103,10 @@ namespace DiffMatchPatch.Tests
                 Diff.Delete("abc"),
                 Diff.Insert("1234")
             };
-            Assert.AreEqual(4, diffs.Levenshtein(), "diff_levenshtein: Levenshtein with leading equality.");
+            Assert.Equal(4, diffs.Levenshtein());
 
         }
-        [TestMethod]
+        [Fact]
         public void Levenshtein_WithMiddleEquality()
         {
             var diffs = new List<Diff>
@@ -115,9 +115,9 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("xyz"),
                 Diff.Insert("1234")
             };
-            Assert.AreEqual(7, diffs.Levenshtein(), "diff_levenshtein: Levenshtein with middle equality.");
+            Assert.Equal(7, diffs.Levenshtein());
         }
-        [TestMethod]
+        [Fact]
         public void DiffBisectTest_NoTimeout()
         {
 
@@ -135,18 +135,18 @@ namespace DiffMatchPatch.Tests
                 Diff.Delete("t"),
                 Diff.Insert("p")
             };
-            CollectionAssert.AreEqual(diffs, DiffAlgorithm.MyersDiffBisect(a, b, new CancellationToken(), false));
+            Assert.Equal(diffs, DiffAlgorithm.MyersDiffBisect(a, b, new CancellationToken(), false));
         }
 
 
-        [TestMethod]
+        [Fact]
         public void DiffBisectTest_WithTimeout()
         {
             var a = "cat";
             var b = "map";
 
             var diffs = new List<Diff> { Diff.Delete("cat"), Diff.Insert("map") };
-            CollectionAssert.AreEqual(diffs, DiffAlgorithm.MyersDiffBisect(a, b, new CancellationToken(true), true));
+            Assert.Equal(diffs, DiffAlgorithm.MyersDiffBisect(a, b, new CancellationToken(true), true));
         }
     }
 }

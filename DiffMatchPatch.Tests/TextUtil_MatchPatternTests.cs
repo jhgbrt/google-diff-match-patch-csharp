@@ -19,53 +19,53 @@
  * http://code.google.com/p/google-diff-match-patch/
  */
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace DiffMatchPatch.Tests
 {
-    [TestClass]
+    
     public class TextUtil_MatchPatternTests
     {
-        [TestMethod]
+        [Fact]
         public void EqualStrings_FullMatch()
         {
-            Assert.AreEqual(0, "abcdef".FindBestMatchIndex("abcdef", 1000), "match_main: Equality.");
+            Assert.Equal(0, "abcdef".FindBestMatchIndex("abcdef", 1000));
         }
 
-        [TestMethod]
+        [Fact]
         public void EmptyString_NoMatch()
         {
-            Assert.AreEqual(-1, "".FindBestMatchIndex("abcdef", 1), "match_main: Null text.");
+            Assert.Equal(-1, "".FindBestMatchIndex("abcdef", 1));
         }
 
-        [TestMethod]
+        [Fact]
         public void EmptyPattern()
         {
-            Assert.AreEqual(3, "abcdef".FindBestMatchIndex("", 3), "match_main: Null pattern.");
+            Assert.Equal(3, "abcdef".FindBestMatchIndex("", 3));
         }
 
-        [TestMethod]
+        [Fact]
         public void ExactMatch()
         {
-            Assert.AreEqual(3, "abcdef".FindBestMatchIndex("de", 3), "match_main: Exact match.");
+            Assert.Equal(3, "abcdef".FindBestMatchIndex("de", 3));
         }
-        [TestMethod]
+        [Fact]
         public void MatchBeyondEnd()
         {
-            Assert.AreEqual(3, "abcdef".FindBestMatchIndex("defy", 4), "match_main: Beyond end match.");
+            Assert.Equal(3, "abcdef".FindBestMatchIndex("defy", 4));
         }
-        [TestMethod]
+        [Fact]
         public void OversizedPattern()
         {
-            Assert.AreEqual(0, "abcdef".FindBestMatchIndex("abcdefy", 0), "match_main: Oversized pattern.");
+            Assert.Equal(0, "abcdef".FindBestMatchIndex("abcdefy", 0));
         }
 
-        [TestMethod]
+        [Fact]
         public void ComplexMatch()
         {
             var input = "I am the very model of a modern major general.";
             var match = input.FindBestMatchIndex(" that berry ", 5, new MatchSettings(0.7f, 1000));
-            Assert.AreEqual(4, match, "match_main: Complex match.");
+            Assert.Equal(4, match);
         }
     }
 }

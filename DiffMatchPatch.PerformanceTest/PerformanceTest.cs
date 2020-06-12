@@ -1,20 +1,19 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace DiffMatchPatch.PerformanceTest
 {
-    [TestClass]
     public class PerformanceTest
     {
-        public static void Main()
-        {
-            var t = new PerformanceTest();
-            t.TestPerformance1();
-        }
+        //public static void Main()
+        //{
+        //    var t = new PerformanceTest();
+        //    t.TestPerformance1();
+        //}
 
-        [TestMethod]
+        [Fact]
         public void TestPerformance1()
         {
             var oldText = File.ReadAllText("left.txt");
@@ -36,7 +35,7 @@ namespace DiffMatchPatch.PerformanceTest
             //Process.Start(fileName);
         }
 
-        [TestMethod]
+        [Fact]
         public void TestPerformance2()
         {
             string text1 = File.ReadAllText("Speedtest1.txt");
