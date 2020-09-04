@@ -13,14 +13,7 @@ namespace DiffMatchPatch.Tests
         public void ToString_ReturnsExpectedString()
         {
             // Patch Object.
-            var p = new Patch
-            {
-                Start1 = 20,
-                Start2 = 21,
-                Length1 = 18,
-                Length2 = 17
-            };
-            p.Diffs.AddRange(new[]
+            var p = new Patch(20, 18, 21, 17, new[]
             {
                 Diff.Equal("jump"),
                 Diff.Delete("s"),
