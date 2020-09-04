@@ -17,6 +17,13 @@ namespace DiffMatchPatch
             Length2 = length2;
             Diffs = diffs.ToList();
         }
+
+        public Patch AddDiff(Diff diff)
+        {
+            Diffs.Add(diff);
+            return this;
+        }
+
         public List<Diff> Diffs { get; }
         public int Start1 { get; internal set; }
         public int Start2 { get; internal set; }
@@ -71,7 +78,7 @@ namespace DiffMatchPatch
                 Length1,
                 Start2,
                 Length2,
-                Diffs.Select(d => d.Copy()).ToList()
+                Diffs.ToList()
             );
             return patchCopy;
         }
@@ -196,13 +203,13 @@ namespace DiffMatchPatch
                 switch (aDiff.Operation)
                 {
                     case Insert:
-                        patch.Diffs.Add(aDiff);
+                        patch.AddDiff(aDiff);
                         patch.Length2 += aDiff.Text.Length;
                         postpatchText = postpatchText.Insert(charCount2, aDiff.Text);
                         break;
                     case Delete:
                         patch.Length1 += aDiff.Text.Length;
-                        patch.Diffs.Add(aDiff);
+                        patch.AddDiff(aDiff);
                         postpatchText = postpatchText.Remove(charCount2,
                            aDiff.Text.Length);
                         break;
@@ -211,7 +218,7 @@ namespace DiffMatchPatch
                             && patch.Diffs.Any() && aDiff != diffs.Last())
                         {
                             // Small equality inside a patch.
-                            patch.Diffs.Add(aDiff);
+                            patch.AddDiff(aDiff);
                             patch.Length1 += aDiff.Text.Length;
                             patch.Length2 += aDiff.Text.Length;
                         }

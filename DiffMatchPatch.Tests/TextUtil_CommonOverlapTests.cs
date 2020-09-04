@@ -20,6 +20,12 @@ namespace DiffMatchPatch.Tests
             Assert.Equal(3, TextUtil.CommonOverlap("abc", "abcd"));
         }
         [Fact]
+        public void CommonOverlapRecurringPatternOverlap()
+        {
+
+            Assert.Equal(4, TextUtil.CommonOverlap("xyz1212", "1212abc"));
+        }
+        [Fact]
         public void CommonOverlapDisjunctStringsNoOverlap()
         {
 
@@ -27,11 +33,17 @@ namespace DiffMatchPatch.Tests
             Assert.Equal(0, TextUtil.CommonOverlap("123456", "abcd"));
         }
         [Fact]
+        public void CommonOverlapPatternInTheMiddle_NoOverlap()
+        {
+
+            Assert.Equal(0, TextUtil.CommonOverlap("123456xxx", "efgxxxabcd"));
+        }
+        [Fact]
         public void CommonOverlapFirstEndsWithStartOfSecondOverlap()
         {
 
             // Overlap.
-            Assert.Equal(3, TextUtil.CommonOverlap("123456xxx", "xxxabcd"));
+            Assert.Equal(3, TextUtil.CommonOverlap("123456xyz", "xyzabcd"));
         }
         [Fact]
         public void CommonOverlapUnicodeLigaturesAndComponentLettersNoOverlap()

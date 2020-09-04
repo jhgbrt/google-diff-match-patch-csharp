@@ -31,6 +31,11 @@ namespace DiffMatchPatch
             .Aggregate(new StringBuilder(), (sb, diff) => sb.Append(diff.Text))
             .ToString();
 
+        record LevenshteinState(int Insertions, int Deletions, int Levenshtein)
+        {
+            public LevenshteinState Consolidate() => new LevenshteinState(0, 0, Levenshtein + Math.Max(Insertions, Deletions));
+        }
+
         /// <summary>
         /// Compute the Levenshtein distance; the number of inserted, deleted or substituted characters.
         /// </summary>
@@ -38,29 +43,18 @@ namespace DiffMatchPatch
         /// <returns></returns>
         public static int Levenshtein(this IEnumerable<Diff> diffs)
         {
-            var levenshtein = 0;
-            var insertions = 0;
-            var deletions = 0;
+            var state = new LevenshteinState(0,0,0);
             foreach (var aDiff in diffs)
             {
-                switch (aDiff.Operation)
+                state = aDiff.Operation switch
                 {
-                    case Insert:
-                        insertions += aDiff.Text.Length;
-                        break;
-                    case Delete:
-                        deletions += aDiff.Text.Length;
-                        break;
-                    case Equal:
-                        // A deletion and an insertion is one substitution.
-                        levenshtein += Math.Max(insertions, deletions);
-                        insertions = 0;
-                        deletions = 0;
-                        break;
-                }
+                    Insert => state with { Insertions = state.Insertions + aDiff.Text.Length },
+                    Delete => state with { Deletions = state.Deletions + aDiff.Text.Length },
+                    Equal => state.Consolidate(),
+                    _ => throw new IndexOutOfRangeException()
+                };
             }
-            levenshtein += Math.Max(insertions, deletions);
-            return levenshtein;
+            return state.Consolidate().Levenshtein;
         }
         private static StringBuilder AppendHtml(this StringBuilder sb, string tag, string backgroundColor, string content) 
             => sb
@@ -159,30 +153,26 @@ namespace DiffMatchPatch
                 // operation of this token (delete, insert, equality).
                 var param = token.Substring(1);
                 var operation = FromDelta(token[0]);
-                string text;
-                switch (operation)
+                int n = 0;
+                if (operation != Insert)
                 {
-                    case Insert:
-                        // decode would change all "+" to " "
-                        text = param.Replace("+", "%2b").UrlDecoded();
-                        break;
-                    case Delete:
-                    case Equal:
-                        if (!int.TryParse(param, out var n))
-                        {
-                            throw new ArgumentException($"Invalid number in Diff.FromDelta: {param}");
-                        }
-                        if (pointer < 0 || n < 0 || pointer > text1.Length - n)
-                        {
-                            throw new ArgumentException($"Delta length ({pointer}) larger than source text length ({text1.Length}).");
-                        }
-
-                        text = text1.Substring(pointer, n);
-                        pointer += n;
-
-                        break;
-                    default: throw new ArgumentException($"Unknown Operation: {operation}");
+                    if (!int.TryParse(param, out n))
+                    {
+                        throw new ArgumentException($"Invalid number in Diff.FromDelta: {param}");
+                    }
+                    if (pointer < 0 || n < 0 || pointer > text1.Length - n)
+                    {
+                        throw new ArgumentException($"Delta length ({pointer}) larger than source text length ({text1.Length}).");
+                    }
                 }
+                string text;
+                (text, pointer) = operation switch
+                {
+                    Insert => (param.Replace("+", "%2b").UrlDecoded(), pointer),
+                    Equal => (text1.Substring(pointer, n), pointer + n),
+                    Delete => (text1.Substring(pointer, n), pointer + n),
+                    _ => throw new ArgumentException($"Unknown Operation: {operation}")
+                };
                 yield return Diff.Create(operation, text);
             }
             if (pointer != text1.Length)
@@ -641,8 +631,8 @@ namespace DiffMatchPatch
                 if (diffs[pointer - 1].Operation == Delete &&
                     diffs[pointer].Operation == Insert)
                 {
-                    var deletion = diffs[pointer - 1].Text;
-                    var insertion = diffs[pointer].Text;
+                    var deletion = diffs[pointer - 1].Text.AsSpan();
+                    var insertion = diffs[pointer].Text.AsSpan();
                     var overlapLength1 = TextUtil.CommonOverlap(deletion, insertion);
                     var overlapLength2 = TextUtil.CommonOverlap(insertion, deletion);
                     if (overlapLength1 >= overlapLength2)
@@ -654,9 +644,9 @@ namespace DiffMatchPatch
                             // Insert an equality and trim the surrounding edits.
                             var newDiffs = new[]
                             {
-                                Diff.Delete(deletion.Substring(0, deletion.Length - overlapLength1)),
-                                Diff.Equal(insertion.Substring(0, overlapLength1)),
-                                Diff.Insert(insertion.Substring(overlapLength1))
+                                Diff.Delete(deletion.Slice(0, deletion.Length - overlapLength1).ToArray()),
+                                Diff.Equal(insertion.Slice(0, overlapLength1).ToArray()),
+                                Diff.Insert(insertion.Slice(overlapLength1).ToArray())
                             };
 
                             diffs.Splice(pointer - 1, 2, newDiffs);
@@ -672,9 +662,9 @@ namespace DiffMatchPatch
                             // Insert an equality and swap and trim the surrounding edits.
 
                             diffs.Splice(pointer - 1, 2,
-                                Diff.Insert(insertion.Substring(0, insertion.Length - overlapLength2)),
-                                Diff.Equal(deletion.Substring(0, overlapLength2)),
-                                Diff.Delete(deletion.Substring(overlapLength2)
+                                Diff.Insert(insertion.Slice(0, insertion.Length - overlapLength2)),
+                                Diff.Equal(deletion.Slice(0, overlapLength2)),
+                                Diff.Delete(deletion.Slice(overlapLength2)
                                     ));
                             pointer++;
                         }

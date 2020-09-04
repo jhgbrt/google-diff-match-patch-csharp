@@ -1,4 +1,7 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -18,7 +21,6 @@ namespace DiffMatchPatch
         {
             var l1 = text1.Length - i1;
             var l2 = text2.Length - i2;
-            // Performance analysis: http://neil.fraser.name/news/2007/10/09/
             var n = Math.Min(l1, l2);
             for (var i = 0; i < n; i++)
             {
@@ -32,7 +34,6 @@ namespace DiffMatchPatch
 
         internal static int CommonPrefix(StringBuilder text1, StringBuilder text2)
         {
-            // Performance analysis: http://neil.fraser.name/news/2007/10/09/
             var n = Math.Min(text1.Length, text2.Length);
             for (var i = 0; i < n; i++)
             {
@@ -53,7 +54,6 @@ namespace DiffMatchPatch
         /// <returns>The number of characters common to the end of each string.</returns>
         internal static int CommonSuffix(string text1, string text2, int? l1 = null, int? l2 = null)
         {
-            // Performance analysis: http://neil.fraser.name/news/2007/10/09/
             var text1Length = l1 ?? text1.Length;
             var text2Length = l2 ?? text2.Length;
             var n = Math.Min(text1Length, text2Length);
@@ -68,7 +68,6 @@ namespace DiffMatchPatch
         }
         internal static int CommonSuffix(StringBuilder text1, StringBuilder text2)
         {
-            // Performance analysis: http://neil.fraser.name/news/2007/10/09/
             var text1Length = text1.Length;
             var text2Length = text2.Length;
             var n = Math.Min(text1Length, text2Length);
@@ -91,7 +90,7 @@ namespace DiffMatchPatch
         /// <param name="text2"></param>
         /// <returns>The number of characters common to the end of the first
         ///  string and the start of the second string.</returns>
-        internal static int CommonOverlap(string text1, string text2)
+        internal static int CommonOverlap(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2)
         {
             // Cache the text lengths to prevent multiple calls.
             var text1Length = text1.Length;
@@ -104,40 +103,24 @@ namespace DiffMatchPatch
             // Truncate the longer string.
             if (text1Length > text2Length)
             {
-                text1 = text1.Substring(text1Length - text2Length);
+                text1 = text1.Slice(text1Length - text2Length);
             }
             else if (text1Length < text2Length)
             {
-                text2 = text2.Substring(0, text1Length);
-            }
-            var textLength = Math.Min(text1Length, text2Length);
-            // Quick check for the worst case.
-            if (text1 == text2)
-            {
-                return textLength;
+                text2 = text2.Slice(0, text1Length);
             }
 
-            // Start by looking for a single character match
-            // and increase length until no match is found.
-            // Performance analysis: http://neil.fraser.name/news/2010/11/04/
-            var best = 0;
-            var length = 1;
-            while (true)
+            var textLength = Math.Min(text1Length, text2Length);
+
+            // look for last character of text1 in text2, from the end to the beginning
+            // where text1 ends with the pattern from beginning of text2 until that character
+            var last = text1[^1];
+            for (int length = text2.Length; length > 0; length--)
             {
-                var pattern = text1.Substring(textLength - length);
-                var found = text2.IndexOf(pattern, StringComparison.Ordinal);
-                if (found == -1)
-                {
-                    return best;
-                }
-                length += found;
-                if (found == 0 || text1.Substring(textLength - length) ==
-                    text2.Substring(0, length))
-                {
-                    best = length;
-                    length++;
-                }
+                if (text2[length-1] == last && text1.EndsWith(text2.Slice(0, length)))
+                    return length;
             }
+            return 0;
 
         }
 

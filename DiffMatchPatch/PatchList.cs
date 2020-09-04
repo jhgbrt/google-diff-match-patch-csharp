@@ -313,7 +313,7 @@ namespace DiffMatchPatch
                     if (precontext.Length != 0)
                     {
                         patch.Length1 = patch.Length2 = precontext.Length;
-                        patch.Diffs.Add(Diff.Equal(precontext));
+                        patch.AddDiff(Diff.Equal(precontext));
                     }
                     while (diffs.Any() && patch.Length1 < patchSize - patchMargin)
                     {
@@ -324,7 +324,7 @@ namespace DiffMatchPatch
                             // Insertions are harmless.
                             patch.Length2 += diffText.Length;
                             start2 += diffText.Length;
-                            patch.Diffs.Add(diffs.First());
+                            patch.AddDiff(diffs.First());
                             diffs.RemoveAt(0);
                             empty = false;
                         }
@@ -336,7 +336,7 @@ namespace DiffMatchPatch
                             patch.Length1 += diffText.Length;
                             start1 += diffText.Length;
                             empty = false;
-                            patch.Diffs.Add(Diff.Create(diffType, diffText));
+                            patch.AddDiff(Diff.Create(diffType, diffText));
                             diffs.RemoveAt(0);
                         }
                         else
@@ -355,7 +355,7 @@ namespace DiffMatchPatch
                             {
                                 empty = false;
                             }
-                            patch.Diffs.Add(Diff.Create(diffType, diffText));
+                            patch.AddDiff(Diff.Create(diffType, diffText));
                             if (diffText == diffs[0].Text)
                             {
                                 diffs.RemoveAt(0);
@@ -386,7 +386,7 @@ namespace DiffMatchPatch
                         }
                         else
                         {
-                            patch.Diffs.Add(Diff.Equal(postcontext));
+                            patch.AddDiff(Diff.Equal(postcontext));
                         }
                     }
                     if (!empty)

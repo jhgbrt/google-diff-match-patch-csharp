@@ -4,24 +4,15 @@ using System.Threading;
 
 namespace DiffMatchPatch
 {
-    public struct Diff
+    public record Diff(Operation Operation, string Text)
     {
         internal static Diff Create(Operation operation, string text) => new Diff(operation, text);
         internal static Diff Equal(string text) => Create(Operation.Equal, text);
         internal static Diff Insert(string text) => Create(Operation.Insert, text);
         internal static Diff Delete(string text) => Create(Operation.Delete, text);
-
-        public readonly Operation Operation;
-        // One of: INSERT, DELETE or EQUAL.
-        public readonly string Text;
-        // The text associated with this diff operation.
-
-        Diff(Operation operation, string text)
-        {
-            // Construct a diff with the specified operation and text.
-            Operation = operation;
-            Text = text;
-        }
+        internal static Diff Equal(ReadOnlySpan<char> text) => Create(Operation.Equal, new string(text.ToArray()));
+        internal static Diff Insert(ReadOnlySpan<char> text) => Create(Operation.Insert, new string(text.ToArray()));
+        internal static Diff Delete(ReadOnlySpan<char> text) => Create(Operation.Delete, new string(text.ToArray()));
 
         /// <summary>
         /// Generate a human-readable version of this Diff.
@@ -33,25 +24,7 @@ namespace DiffMatchPatch
             return "Diff(" + Operation + ",\"" + prettyText + "\")";
         }
 
-        /// <summary>
-        /// Is this Diff equivalent to another Diff?
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        public override bool Equals(Object obj) => !ReferenceEquals(obj, null) && Equals((Diff) obj);
-
-        public bool Equals(Diff obj) => obj.Operation == Operation && obj.Text == Text;
-
-        public static bool operator==(Diff left, Diff right) => left.Equals(right);
-
-        public static bool operator !=(Diff left, Diff right) => !(left == right);
-
-
-        public override int GetHashCode() => Text.GetHashCode() ^ Operation.GetHashCode();
-
-        internal Diff Replace(string toString) => Create(Operation, toString);
-
-        internal Diff Copy() => Create(Operation, Text);
+        internal Diff Replace(string text) => this with { Text = text };
 
         /// <summary>
         /// Find the differences between two texts.
