@@ -14,7 +14,7 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="diffs"></param>
         /// <returns></returns>
-        public static string Text1(this IEnumerable<Diff> diffs) 
+        public static string Text1(this IEnumerable<Diff> diffs)
             => diffs
             .Where(d => d.Operation != Insert)
             .Aggregate(new StringBuilder(), (sb, diff) => sb.Append(diff.Text))
@@ -25,7 +25,7 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="diffs"></param>
         /// <returns></returns>
-        public static string Text2(this IEnumerable<Diff> diffs) 
+        public static string Text2(this IEnumerable<Diff> diffs)
             => diffs
             .Where(d => d.Operation != Delete)
             .Aggregate(new StringBuilder(), (sb, diff) => sb.Append(diff.Text))
@@ -43,7 +43,7 @@ namespace DiffMatchPatch
         /// <returns></returns>
         public static int Levenshtein(this IEnumerable<Diff> diffs)
         {
-            var state = new LevenshteinState(0,0,0);
+            var state = new LevenshteinState(0, 0, 0);
             foreach (var aDiff in diffs)
             {
                 state = aDiff.Operation switch
@@ -56,7 +56,7 @@ namespace DiffMatchPatch
             }
             return state.Consolidate().Levenshtein;
         }
-        private static StringBuilder AppendHtml(this StringBuilder sb, string tag, string backgroundColor, string content) 
+        private static StringBuilder AppendHtml(this StringBuilder sb, string tag, string backgroundColor, string content)
             => sb
             .Append(string.IsNullOrEmpty(backgroundColor) ? $"<{tag}>" : $"<{tag} style=\"background:{backgroundColor};\">")
             .Append(content)
@@ -91,20 +91,20 @@ namespace DiffMatchPatch
         }
 
         static char ToDelta(this Operation o) => o switch
-            {
-                Delete => '-',
-                Insert => '+',
-                Equal => '=',
-                _ => throw new ArgumentException($"Unknown Operation: {o}")
-            };
+        {
+            Delete => '-',
+            Insert => '+',
+            Equal => '=',
+            _ => throw new ArgumentException($"Unknown Operation: {o}")
+        };
 
         static Operation FromDelta(char c) => c switch
-            {
-                '-' => Delete,
-                '+' => Insert,
-                '=' => Equal,
-                _ => throw new ArgumentException($"Invalid Delta Token: {c}")
-            };
+        {
+            '-' => Delete,
+            '+' => Insert,
+            '=' => Equal,
+            _ => throw new ArgumentException($"Invalid Delta Token: {c}")
+        };
 
         /// <summary>
         /// Crush the diff into an encoded string which describes the operations
@@ -140,7 +140,7 @@ namespace DiffMatchPatch
         {
             var pointer = 0;  // Cursor in text1
 
-            var tokens = delta.Split(new[] { "\t" },  StringSplitOptions.None);
+            var tokens = delta.Split(new[] { "\t" }, StringSplitOptions.None);
 
             foreach (var token in tokens)
             {
@@ -281,7 +281,7 @@ namespace DiffMatchPatch
             // e.g: A<ins>BA</ins>C -> <ins>AB</ins>AC
             var changes = false;
             // Intentionally ignore the first and last element (don't need checking).
-            for (var i = 1;  i < diffs.Count - 1; i++)
+            for (var i = 1; i < diffs.Count - 1; i++)
             {
                 var previous = diffs[i - 1];
                 var current = diffs[i];
@@ -298,7 +298,7 @@ namespace DiffMatchPatch
                         diffs.Splice(i - 1, 1);
                         changes = true;
                     }
-                    else if (current.Text.StartsWith(next.Text,StringComparison.Ordinal))
+                    else if (current.Text.StartsWith(next.Text, StringComparison.Ordinal))
                     {
                         // Shift the edit over the next equality.
                         diffs[i - 1] = previous.Replace(previous.Text + next.Text);
@@ -635,40 +635,38 @@ namespace DiffMatchPatch
                     var insertion = diffs[pointer].Text.AsSpan();
                     var overlapLength1 = TextUtil.CommonOverlap(deletion, insertion);
                     var overlapLength2 = TextUtil.CommonOverlap(insertion, deletion);
-                    if (overlapLength1 >= overlapLength2)
-                    {
-                        if (overlapLength1 >= deletion.Length / 2.0 ||
-                            overlapLength1 >= insertion.Length / 2.0)
-                        {
-                            // Overlap found.
-                            // Insert an equality and trim the surrounding edits.
-                            var newDiffs = new[]
-                            {
-                                Diff.Delete(deletion.Slice(0, deletion.Length - overlapLength1).ToArray()),
-                                Diff.Equal(insertion.Slice(0, overlapLength1).ToArray()),
-                                Diff.Insert(insertion.Slice(overlapLength1).ToArray())
-                            };
+                    var minLength = Math.Min(deletion.Length, insertion.Length);
 
-                            diffs.Splice(pointer - 1, 2, newDiffs);
-                            pointer++;
-                        }
+                    Diff[] newdiffs = null;
+                    if ((overlapLength1 >= overlapLength2) && (overlapLength1 >= minLength / 2.0))
+                    {
+                        // Overlap found.
+                        // Insert an equality and trim the surrounding edits.
+                        newdiffs = new[] 
+                        {
+                            Diff.Delete(deletion.Slice(0, deletion.Length - overlapLength1).ToArray()),
+                            Diff.Equal(insertion.Slice(0, overlapLength1).ToArray()),
+                            Diff.Insert(insertion.Slice(overlapLength1).ToArray())
+                        };
                     }
-                    else
+                    else if ((overlapLength2 >= overlapLength1) && overlapLength2 >= minLength / 2.0)
                     {
-                        if (overlapLength2 >= deletion.Length / 2.0 ||
-                            overlapLength2 >= insertion.Length / 2.0)
+                        // Reverse overlap found.
+                        // Insert an equality and swap and trim the surrounding edits.
+                        newdiffs = new[]
                         {
-                            // Reverse overlap found.
-                            // Insert an equality and swap and trim the surrounding edits.
-
-                            diffs.Splice(pointer - 1, 2,
                                 Diff.Insert(insertion.Slice(0, insertion.Length - overlapLength2)),
                                 Diff.Equal(deletion.Slice(0, overlapLength2)),
-                                Diff.Delete(deletion.Slice(overlapLength2)
-                                    ));
-                            pointer++;
-                        }
+                                Diff.Delete(deletion.Slice(overlapLength2))
+                        };
                     }
+
+                    if (newdiffs != null)
+                    {
+                        diffs.Splice(pointer - 1, 2, newdiffs);
+                        pointer++;
+                    }
+
                     pointer++;
                 }
                 pointer++;
@@ -707,7 +705,7 @@ namespace DiffMatchPatch
             var chars2 = 0;
             var lastChars1 = 0;
             var lastChars2 = 0;
-            Diff lastDiff = Diff.Create(Equal, string.Empty);
+            Diff lastDiff = Diff.Empty;
             foreach (var aDiff in diffs)
             {
                 if (aDiff.Operation != Insert)

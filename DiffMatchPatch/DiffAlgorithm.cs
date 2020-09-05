@@ -79,20 +79,23 @@ namespace DiffMatchPatch
             string text2,
             bool checklines, CancellationToken token, bool optimizeForSpeed)
         {
-            var diffs = new List<Diff>();
 
             if (text1.Length == 0)
             {
                 // Just add some text (speedup).
-                diffs.Add(Diff.Insert(text2));
-                return diffs;
+                return new List<Diff>
+                {
+                    Diff.Insert(text2) 
+                };
             }
 
             if (text2.Length == 0)
             {
                 // Just delete some text (speedup).
-                diffs.Add(Diff.Delete(text1));
-                return diffs;
+                return new List<Diff>
+                {
+                    Diff.Delete(text1)
+                };
             }
 
             var longtext = text1.Length > text2.Length ? text1 : text2;
@@ -101,20 +104,35 @@ namespace DiffMatchPatch
             if (i != -1)
             {
                 // Shorter text is inside the longer text (speedup).
-                var op = text1.Length > text2.Length ? Delete : Insert;
-                diffs.Add(Diff.Create(op, longtext.Substring(0, i)));
-                diffs.Add(Diff.Equal(shorttext));
-                diffs.Add(Diff.Create(op, longtext.Substring(i + shorttext.Length)));
-                return diffs;
+                if (text1.Length > text2.Length)
+                {
+                    return new List<Diff>
+                    {
+                        Diff.Delete(longtext.Substring(0, i)),
+                        Diff.Equal(shorttext),
+                        Diff.Delete(longtext.Substring(i + shorttext.Length))
+                    };
+                }
+                else
+                {
+                    return new List<Diff>
+                    {
+                        Diff.Insert(longtext.Substring(0, i)),
+                        Diff.Equal(shorttext),
+                        Diff.Insert(longtext.Substring(i + shorttext.Length))
+                    };
+                }
             }
 
             if (shorttext.Length == 1)
             {
                 // Single character string.
                 // After the previous speedup, the character can't be an equality.
-                diffs.Add(Diff.Delete(text1));
-                diffs.Add(Diff.Insert(text2));
-                return diffs;
+                return new List<Diff>
+                {
+                    Diff.Delete(text1),
+                    Diff.Insert(text2)
+                };
             }
 
             // Don't risk returning a non-optimal diff if we have unlimited time.
@@ -130,9 +148,10 @@ namespace DiffMatchPatch
                     var diffsB = Compute(result.Suffix1, result.Suffix2, checklines, token, optimizeForSpeed);
 
                     // Merge the results.
-                    diffs = diffsA;
-                    diffs.Add(Diff.Equal(result.CommonMiddle));
-                    diffs.AddRange(diffsB);
+                    var diffs = diffsA
+                        .Concat(Diff.Equal(result.CommonMiddle))
+                        .Concat(diffsB)
+                        .ToList();
                     return diffs;
                 }
             }

@@ -13,7 +13,7 @@ namespace DiffMatchPatch
         internal static Diff Equal(ReadOnlySpan<char> text) => Create(Operation.Equal, new string(text.ToArray()));
         internal static Diff Insert(ReadOnlySpan<char> text) => Create(Operation.Insert, new string(text.ToArray()));
         internal static Diff Delete(ReadOnlySpan<char> text) => Create(Operation.Delete, new string(text.ToArray()));
-
+        internal static Diff Empty => new Diff(Operation.Equal, string.Empty);
         /// <summary>
         /// Generate a human-readable version of this Diff.
         /// </summary>

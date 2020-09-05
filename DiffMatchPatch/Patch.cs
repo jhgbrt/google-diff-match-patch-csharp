@@ -159,7 +159,7 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="diffs">array of diff objects for text1 to text2</param>
         /// <returns>List of Patch objects</returns>
-        public static List<Patch> FromDiffs(List<Diff> diffs)
+        public static List<Patch> FromDiffs(IEnumerable<Diff> diffs)
         {
             // Check for null inputs not needed since null can't be passed in C#.
             // No origin string provided, compute our own.
@@ -175,11 +175,11 @@ namespace DiffMatchPatch
         /// <param name="diffs"></param>
         /// <param name="patchMargin"></param>
         /// <returns></returns>
-        public static List<Patch> Compute(string text1, List<Diff> diffs, short patchMargin = 4)
+        public static List<Patch> Compute(string text1, IEnumerable<Diff> diffs, short patchMargin = 4)
         {
             // Check for null inputs not needed since null can't be passed in C#.
             var patches = new List<Patch>();
-            if (diffs.Count == 0)
+            if (!diffs.Any())
             {
                 return patches;  // Get rid of the null case.
             }

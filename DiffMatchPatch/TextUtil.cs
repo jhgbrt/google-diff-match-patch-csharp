@@ -24,7 +24,21 @@ namespace DiffMatchPatch
             var n = Math.Min(l1, l2);
             for (var i = 0; i < n; i++)
             {
-                if (text1[i+i1] != text2[i+i2])
+                if (text1[i + i1] != text2[i + i2])
+                {
+                    return i;
+                }
+            }
+            return n;
+        }
+        internal static int CommonPrefix(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, int i1 = 0, int i2 = 0)
+        {
+            var l1 = text1.Length - i1;
+            var l2 = text2.Length - i2;
+            var n = Math.Min(l1, l2);
+            for (var i = 0; i < n; i++)
+            {
+                if (text1[i + i1] != text2[i + i2])
                 {
                     return i;
                 }
@@ -53,6 +67,20 @@ namespace DiffMatchPatch
         /// <param name="l2">maximum length to consider for text2</param>
         /// <returns>The number of characters common to the end of each string.</returns>
         internal static int CommonSuffix(string text1, string text2, int? l1 = null, int? l2 = null)
+        {
+            var text1Length = l1 ?? text1.Length;
+            var text2Length = l2 ?? text2.Length;
+            var n = Math.Min(text1Length, text2Length);
+            for (var i = 1; i <= n; i++)
+            {
+                if (text1[text1Length - i] != text2[text2Length - i])
+                {
+                    return i - 1;
+                }
+            }
+            return n;
+        }
+        internal static int CommonSuffix(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, int? l1 = null, int? l2 = null)
         {
             var text1Length = l1 ?? text1.Length;
             var text2Length = l2 ?? text2.Length;

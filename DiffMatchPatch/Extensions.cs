@@ -41,5 +41,11 @@ namespace DiffMatchPatch
             input.RemoveRange(start, count);
             input.InsertRange(start, objects);
         }
+
+        internal static IEnumerable<T> Concat<T>(this IEnumerable<T> items, T item)
+        {
+            foreach (var i in items) yield return i;
+            yield return item;
+        }    
     }
 }
