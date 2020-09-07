@@ -7,12 +7,9 @@ namespace DiffMatchPatch
     public record Diff(Operation Operation, string Text)
     {
         internal static Diff Create(Operation operation, string text) => new Diff(operation, text);
-        internal static Diff Equal(string text) => Create(Operation.Equal, text);
-        internal static Diff Insert(string text) => Create(Operation.Insert, text);
-        internal static Diff Delete(string text) => Create(Operation.Delete, text);
-        internal static Diff Equal(ReadOnlySpan<char> text) => Create(Operation.Equal, new string(text.ToArray()));
-        internal static Diff Insert(ReadOnlySpan<char> text) => Create(Operation.Insert, new string(text.ToArray()));
-        internal static Diff Delete(ReadOnlySpan<char> text) => Create(Operation.Delete, new string(text.ToArray()));
+        internal static Diff Equal(ReadOnlySpan<char> text) => Create(Operation.Equal, text.ToString());
+        internal static Diff Insert(ReadOnlySpan<char> text) => Create(Operation.Insert, text.ToString());
+        internal static Diff Delete(ReadOnlySpan<char> text) => Create(Operation.Delete, text.ToString());
         internal static Diff Empty => new Diff(Operation.Equal, string.Empty);
         /// <summary>
         /// Generate a human-readable version of this Diff.
@@ -40,13 +37,10 @@ namespace DiffMatchPatch
         /// <returns></returns>
         public static List<Diff> Compute(string text1, string text2, float timeoutInSeconds = 0f, bool checklines = true)
         {
-            using (var cts = timeoutInSeconds <= 0 
-                ? new CancellationTokenSource() 
-                : new CancellationTokenSource(TimeSpan.FromSeconds(timeoutInSeconds))
-                )
-            {
-                return Compute(text1, text2, checklines, cts.Token, timeoutInSeconds > 0);
-            }
+            using var cts = timeoutInSeconds <= 0
+                ? new CancellationTokenSource()
+                : new CancellationTokenSource(TimeSpan.FromSeconds(timeoutInSeconds));
+            return Compute(text1, text2, checklines, cts.Token, timeoutInSeconds > 0);
         }
 
         public static List<Diff> Compute(string text1, string text2, bool checkLines, CancellationToken token, bool optimizeForSpeed) 

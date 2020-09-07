@@ -47,14 +47,15 @@ namespace DiffMatchPatch
             text1 = text1.Slice(0, text1.Length - commonlength);
             text2 = text2.Slice(0, text2.Length - commonlength);
 
+            List<Diff> diffs = new List<Diff>();
             // Compute the diff on the middle block.
-            var diffs = ComputeImpl(text1, text2, checklines, token, optimizeForSpeed);
-
-            // Restore the prefix and suffix.
             if (commonprefix.Length != 0)
             {
                 diffs.Insert(0, Diff.Equal(commonprefix));
             }
+
+            diffs.AddRange(ComputeImpl(text1, text2, checklines, token, optimizeForSpeed));
+
             if (commonsuffix.Length != 0)
             {
                 diffs.Add(Diff.Equal(commonsuffix));
@@ -77,7 +78,9 @@ namespace DiffMatchPatch
         private static List<Diff> ComputeImpl(
             ReadOnlySpan<char> text1,
             ReadOnlySpan<char> text2,
-            bool checklines, CancellationToken token, bool optimizeForSpeed)
+            bool checklines, 
+            CancellationToken token, 
+            bool optimizeForSpeed)
         {
 
             if (text1.Length == 0)
@@ -148,11 +151,10 @@ namespace DiffMatchPatch
                     var diffsB = Compute(result.Suffix1, result.Suffix2, checklines, token, optimizeForSpeed);
 
                     // Merge the results.
-                    var diffs = diffsA
+                    return  diffsA
                         .Concat(Diff.Equal(result.CommonMiddle))
                         .Concat(diffsB)
                         .ToList();
-                    return diffs;
                 }
             }
             if (checklines && text1.Length > 100 && text2.Length > 100)
