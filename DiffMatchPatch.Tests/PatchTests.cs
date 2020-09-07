@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Xunit;
 
@@ -92,7 +93,7 @@ namespace DiffMatchPatch.Tests
         public void AddContext_SimpleCase()
         {
             var p = PatchList.Parse("@@ -21,4 +21,10 @@\n-jump\n+somersault\n")[0];
-            (int s1, int l1, int s2, int l2, List<Diff> diffs) = Patch.AddContext("The quick brown fox jumps over the lazy dog.", p.Start1, p.Length1, p.Start2, p.Length2, p.Diffs);
+            (int s1, int l1, int s2, int l2, var diffs) = Patch.AddContext("The quick brown fox jumps over the lazy dog.", p.Start1, p.Length1, p.Start2, p.Length2, p.Diffs.ToBuilder());
             p = new Patch(s1, l1, s2, l2, diffs);
             Assert.Equal("@@ -17,12 +17,18 @@\n fox \n-jump\n+somersault\n s ov\n", p.ToString());
 
@@ -102,7 +103,7 @@ namespace DiffMatchPatch.Tests
         public void AddContext_NotEnoughTrailingContext()
         {
             var p = PatchList.Parse("@@ -21,4 +21,10 @@\n-jump\n+somersault\n")[0];
-            (int s1, int l1, int s2, int l2, List<Diff> diffs) = Patch.AddContext("The quick brown fox jumps.", p.Start1, p.Length1, p.Start2, p.Length2, p.Diffs);
+            (int s1, int l1, int s2, int l2, var diffs) = Patch.AddContext("The quick brown fox jumps.", p.Start1, p.Length1, p.Start2, p.Length2, p.Diffs.ToBuilder());
             p = new Patch(s1, l1, s2, l2, diffs);
             Assert.Equal("@@ -17,10 +17,16 @@\n fox \n-jump\n+somersault\n s.\n", p.ToString());
         }
@@ -111,7 +112,7 @@ namespace DiffMatchPatch.Tests
         public void AddContext_NotEnoughLeadingContext()
         {
             var p = PatchList.Parse("@@ -3 +3,2 @@\n-e\n+at\n")[0];
-            (int s1, int l1, int s2, int l2, List<Diff> diffs) = Patch.AddContext("The quick brown fox jumps.", p.Start1, p.Length1, p.Start2, p.Length2, p.Diffs);
+            (int s1, int l1, int s2, int l2, var diffs) = Patch.AddContext("The quick brown fox jumps.", p.Start1, p.Length1, p.Start2, p.Length2, p.Diffs.ToBuilder());
             p = new Patch(s1, l1, s2, l2, diffs);
             Assert.Equal("@@ -1,7 +1,8 @@\n Th\n-e\n+at\n  qui\n", p.ToString());
         }
@@ -120,7 +121,7 @@ namespace DiffMatchPatch.Tests
         public void AddContext_Ambiguity()
         {
             var p = PatchList.Parse("@@ -3 +3,2 @@\n-e\n+at\n")[0];
-            (int s1, int l1, int s2, int l2, List<Diff> diffs) = Patch.AddContext("The quick brown fox jumps.  The quick brown fox crashes.", p.Start1, p.Length1, p.Start2, p.Length2, p.Diffs);
+            (int s1, int l1, int s2, int l2, var diffs) = Patch.AddContext("The quick brown fox jumps.  The quick brown fox crashes.", p.Start1, p.Length1, p.Start2, p.Length2, p.Diffs.ToBuilder());
             p = new Patch(s1, l1, s2, l2, diffs);
             Assert.Equal("@@ -1,27 +1,28 @@\n Th\n-e\n+at\n  quick brown fox jumps. \n", p.ToString());
         }

@@ -20,7 +20,7 @@ namespace DiffMatchPatch
         /// <param name="token">Cancellation token for cooperative cancellation</param>
         /// <param name="optimizeForSpeed">Should optimizations be enabled?</param>
         /// <returns></returns>
-        public static List<Diff> Compute(string text1, string text2, bool checklines, CancellationToken token, bool optimizeForSpeed)
+        internal static List<Diff> Compute(string text1, string text2, bool checklines, CancellationToken token, bool optimizeForSpeed)
         {
             if (text1.Length == text2.Length && text1.Length == 0)
                 return new List<Diff>();

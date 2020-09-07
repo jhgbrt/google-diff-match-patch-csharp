@@ -14,7 +14,7 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="patches"></param>
         /// <returns></returns>
-        private static List<Patch> DeepCopy(this IEnumerable<Patch> patches) => patches.Select(p => p.Copy()).ToList();
+        private static List<Patch> DeepCopy(this IEnumerable<Patch> patches) => patches.ToList();
 
         /// <summary>
         /// Add some padding on text start and end so that edges can match something.
@@ -34,16 +34,53 @@ namespace DiffMatchPatch
             var nullPadding = nullPaddingSb.ToString();
 
             // Bump all the patches forward.
-            foreach (var aPatch in patches)
+            for (int i = 0; i < patches.Count; i++)
             {
-                aPatch.Start1 += paddingLength;
-                aPatch.Start2 += paddingLength;
+                patches[i] = patches[i] with { Start1 = patches[i].Start1 + paddingLength, Start2 = patches[i].Start2 + paddingLength };
             }
 
-            patches.First().AddPaddingBeforeFirstDiff(nullPadding);
-            patches.Last().AddPaddingAfterLastDiff(nullPadding);
+            patches[0] = patches[0].AddPaddingBeforeFirstDiff(nullPadding);
+            patches[^1] = patches[^1].AddPaddingAfterLastDiff(nullPadding);
 
             return nullPadding;
+        }
+        private static Patch AddPaddingBeforeFirstDiff(this Patch patch, string nullPadding)
+        {
+            if (patch.Diffs.Count == 0 || patch.Diffs[0].Operation != Equal)
+            {
+                // Add nullPadding equality.
+                return new Patch(patch.Start1 - nullPadding.Length, patch.Length1 + nullPadding.Length, patch.Start2 - nullPadding.Length, patch.Length2 + nullPadding.Length, patch.Diffs.Insert(0, Diff.Equal(nullPadding)));
+            }
+            else if (nullPadding.Length > patch.Diffs[0].Text.Length)
+            {
+                var firstDiff = patch.Diffs[0];
+                var extraLength = nullPadding.Length - firstDiff.Text.Length;
+                return new Patch(patch.Start1 - extraLength, patch.Length1 + extraLength, patch.Start2 - extraLength, patch.Length2 + extraLength, patch.Diffs.RemoveAt(0).Insert(0, firstDiff.Replace(nullPadding.Substring(firstDiff.Text.Length) + firstDiff.Text)));
+            }
+            return patch;
+        }
+
+        private static Patch AddPaddingAfterLastDiff(this Patch patch, string nullPadding)
+        {
+            if (patch.Diffs.Count == 0 || patch.Diffs[^1].Operation != Equal)
+            {
+                var builder = patch.Diffs.ToBuilder();
+                builder.Add(Diff.Equal(nullPadding));
+                return patch with { Length1 = patch.Length1 + nullPadding.Length, Length2 = patch.Length2 + nullPadding.Length, Diffs = builder.ToImmutable() };
+            }
+            else if (nullPadding.Length > patch.Diffs[^1].Text.Length)
+            {
+                var lastDiff = patch.Diffs[^1];
+                var extraLength = nullPadding.Length - lastDiff.Text.Length;
+                var text = lastDiff.Text + nullPadding.Substring(0, extraLength);
+
+                var builder = patch.Diffs.ToBuilder();
+                builder.RemoveAt(builder.Count - 1);
+                builder.Add(lastDiff.Replace(text));
+
+                return patch with { Length1 = patch.Length1 + extraLength, Length2 = patch.Length2 + extraLength, Diffs = builder.ToImmutable() };
+            }
+            return patch;
         }
 
         /// <summary>
@@ -332,7 +369,7 @@ namespace DiffMatchPatch
                             l2 += diffText.Length;
                             start2 += diffText.Length;
                             thediffs.Add(Diff.Insert(diffText));
-                            diffs.RemoveAt(0);
+                            diffs = diffs.RemoveAt(0);
                             empty = false;
                         }
                         else if (first.IsLargeDelete(2*patchSize) && thediffs.Count == 1 && thediffs[0].Operation == Equal)
@@ -341,7 +378,7 @@ namespace DiffMatchPatch
                             l1 += diffText.Length;
                             start1 += diffText.Length;
                             thediffs.Add(Diff.Delete(diffText));
-                            diffs.RemoveAt(0);
+                            diffs = diffs.RemoveAt(0);
                             empty = false;
                         }
                         else
@@ -362,11 +399,11 @@ namespace DiffMatchPatch
                             thediffs.Add(Diff.Create(diffType, cutoff));
                             if (cutoff == first.Text)
                             {
-                                diffs.RemoveAt(0);
+                                diffs = diffs.RemoveAt(0);
                             }
                             else
                             {
-                                diffs[0] = first with { Text = first.Text[cutoff.Length..] };
+                                diffs = diffs.RemoveAt(0).Insert(0, first with { Text = first.Text[cutoff.Length..] });
                             }
                         }
                     }
