@@ -12,29 +12,29 @@ namespace DiffMatchPatch.Tests
     public class Diff_ComputeTests
     {
         [Fact]
-        public void TrivialDiff()
+        public void DiffBetweenTwoEmptyStrings_IsEmpty()
         {
             var diffs = new List<Diff>();
-            Assert.Equal(diffs, Diff.Compute("", "", 1f, false));
+            Assert.Equal(diffs, Diff.Compute("", ""));
         }
         [Fact]
-        public void Equality()
+        public void DiffBetweenTwoEqualStrings_IsOneEquality()
         {
             var expected1 = new List<Diff> { Equal("abc") };
-            Assert.Equal(expected1, Diff.Compute("abc", "abc", 1f, false));
+            Assert.Equal(expected1, Diff.Compute("abc", "abc"));
         }
         [Fact]
         public void SimpleInsert()
         {
             var expected2 = new List<Diff> { Equal("ab"), Insert("123"), Equal("c") };
-            Assert.Equal(expected2, Diff.Compute("abc", "ab123c", 1f, false));
+            Assert.Equal(expected2, Diff.Compute("abc", "ab123c"));
         }
 
         [Fact]
         public void SimpleDelete()
         {
             var expected3 = new List<Diff> { Equal("a"), Delete("123"), Equal("bc") };
-            Assert.Equal(expected3, Diff.Compute("a123bc", "abc", 1f, false));
+            Assert.Equal(expected3, Diff.Compute("a123bc", "abc"));
         }
 
         [Fact]
@@ -48,7 +48,7 @@ namespace DiffMatchPatch.Tests
                 Insert("456"),
                 Equal("c")
             };
-            Assert.Equal(expected4, Diff.Compute("abc", "a123b456c", 1f, false));
+            Assert.Equal(expected4, Diff.Compute("abc", "a123b456c"));
 
         }
 

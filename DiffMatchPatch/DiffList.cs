@@ -140,9 +140,7 @@ namespace DiffMatchPatch
         {
             var pointer = 0;  // Cursor in text1
 
-            var tokens = delta.Split(new[] { "\t" }, StringSplitOptions.None);
-
-            foreach (var token in tokens)
+            foreach (var token in delta.SplitBy('\t'))
             {
                 if (token.Length == 0)
                 {
@@ -188,12 +186,14 @@ namespace DiffMatchPatch
         /// <param name="diffs">list of Diffs</param>
         internal static void CleanupMerge(this List<Diff> diffs)
         {
-            // Add a dummy entry at the end.
-            diffs.Add(Diff.Equal(string.Empty));
+            // Add a dummy entry at the beginning & end.
+            diffs.Insert(0, Diff.Empty);
+            diffs.Add(Diff.Empty);
             var nofdiffs = 0;
             var sbDelete = new StringBuilder();
             var sbInsert = new StringBuilder();
-            var pointer = 0;
+            var pointer = 1;
+            var lastEquality = 0;
             while (pointer < diffs.Count)
             {
                 switch (diffs[pointer].Operation)
@@ -212,35 +212,24 @@ namespace DiffMatchPatch
                         // Upon reaching an equality, check for prior redundancies.
                         if (nofdiffs > 1)
                         {
-                            if (sbDelete.Length > 0 && sbInsert.Length > 0)
+                            // first equality after number of inserts/deletes
+                            // Factor out any common prefixies.
+                            var prefixLength = TextUtil.CommonPrefix(sbInsert, sbDelete);
+                            if (prefixLength > 0)
                             {
-                                // Factor out any common prefixies.
-                                var commonlength = TextUtil.CommonPrefix(sbInsert, sbDelete);
-                                if (commonlength != 0)
-                                {
-                                    var commonprefix = sbInsert.ToString(0, commonlength);
-                                    sbInsert.Remove(0, commonlength);
-                                    sbDelete.Remove(0, commonlength);
-                                    var index = pointer - nofdiffs - 1;
-                                    if (index >= 0 && diffs[index].Operation == Equal)
-                                    {
-                                        diffs[index] = diffs[index].Replace(diffs[index].Text + commonprefix);
-                                    }
-                                    else
-                                    {
-                                        diffs.Insert(0, Diff.Equal(commonprefix));
-                                        pointer++;
-                                    }
-                                }
-                                // Factor out any common suffixies.
-                                commonlength = TextUtil.CommonSuffix(sbInsert, sbDelete);
-                                if (commonlength != 0)
-                                {
-                                    var commonsuffix = sbInsert.ToString(sbInsert.Length - commonlength, commonlength);
-                                    sbInsert.Remove(sbInsert.Length - commonlength, commonlength);
-                                    sbDelete.Remove(sbDelete.Length - commonlength, commonlength);
-                                    diffs[pointer] = diffs[pointer].Replace(commonsuffix + diffs[pointer].Text);
-                                }
+                                var commonprefix = sbInsert.ToString(0, prefixLength);
+                                sbInsert.Remove(0, prefixLength);
+                                sbDelete.Remove(0, prefixLength);
+                                diffs[lastEquality] = diffs[lastEquality].Append(commonprefix);
+                            }
+                            // Factor out any common suffixies.
+                            var suffixLength = TextUtil.CommonSuffix(sbInsert, sbDelete);
+                            if (suffixLength > 0)
+                            {
+                                var commonsuffix = sbInsert.ToString(sbInsert.Length - suffixLength, suffixLength);
+                                sbInsert.Remove(sbInsert.Length - suffixLength, suffixLength);
+                                sbDelete.Remove(sbDelete.Length - suffixLength, suffixLength);
+                                diffs[pointer] = diffs[pointer].Prepend(commonsuffix);
                             }
 
                             // Delete the offending records and add the merged ones.
@@ -255,10 +244,10 @@ namespace DiffMatchPatch
 
                             pointer = pointer - nofdiffs + replacements.Count + 1;
                         }
-                        else if (pointer > 0 && diffs[pointer - 1].Operation == Equal)
+                        else if (pointer > 0 && lastEquality == pointer - 1)
                         {
                             // Merge this equality with the previous one.
-                            diffs[pointer - 1] = diffs[pointer - 1].Replace(diffs[pointer - 1].Text + diffs[pointer].Text);
+                            diffs[lastEquality] = diffs[lastEquality].Append(diffs[pointer].Text);
                             diffs.RemoveAt(pointer);
                         }
                         else
@@ -268,10 +257,15 @@ namespace DiffMatchPatch
                         nofdiffs = 0;
                         sbDelete.Clear();
                         sbInsert.Clear();
+                        lastEquality = pointer - 1;
                         break;
                 }
             }
-            if (diffs.Last().Text.Length == 0)
+            if (diffs.First().IsEmpty && diffs.Count > 1)
+            {
+                diffs.RemoveAt(0);
+            }
+            if (diffs.Last().IsEmpty)
             {
                 diffs.RemoveAt(diffs.Count - 1);  // Remove the dummy entry at the end.
             }
@@ -412,14 +406,16 @@ namespace DiffMatchPatch
             // 'whitespace'.  Since this function's purpose is largely cosmetic,
             // the choice has been made to use each language's native features
             // rather than force total conformity.
-            var char1 = one[one.Length - 1];
+
+            Index i = ^1;
+            var char1 = one[^1];
             var char2 = two[0];
             var nonAlphaNumeric1 = !Char.IsLetterOrDigit(char1);
             var nonAlphaNumeric2 = !Char.IsLetterOrDigit(char2);
-            var whitespace1 = nonAlphaNumeric1 && Char.IsWhiteSpace(char1);
-            var whitespace2 = nonAlphaNumeric2 && Char.IsWhiteSpace(char2);
-            var lineBreak1 = whitespace1 && Char.IsControl(char1);
-            var lineBreak2 = whitespace2 && Char.IsControl(char2);
+            var whitespace1 = Char.IsWhiteSpace(char1);
+            var whitespace2 = Char.IsWhiteSpace(char2);
+            var lineBreak1 = char1 == '\n' || char1 == '\r';
+            var lineBreak2 = char1 == '\n' || char1 == '\r';
             var blankLine1 = lineBreak1 && BlankLineEnd.IsMatch(one);
             var blankLine2 = lineBreak2 && BlankLineStart.IsMatch(two);
 
@@ -468,24 +464,23 @@ namespace DiffMatchPatch
             // Always equal to equalities[equalitiesLength-1][1]
             var lastEquality = string.Empty;
             // Is there an insertion operation before the last equality.
-            var preIns = false;
+            var insertionBeforeLastEquality = false;
             // Is there a deletion operation before the last equality.
-            var preDel = false;
+            var deletionBeforeLastEquality = false;
             // Is there an insertion operation after the last equality.
-            var postIns = false;
+            var insertionAfterLastEquality = false;
             // Is there a deletion operation after the last equality.
-            var postDel = false;
+            var deletionAfterLastEquality = false;
 
             for (var i = 0; i < diffs.Count; i++)
             {
                 if (diffs[i].Operation == Equal)
                 {  // Equality found.
-                    if (diffs[i].Text.Length < diffEditCost && (postIns || postDel))
+                    if (diffs[i].Text.Length < diffEditCost && (insertionAfterLastEquality || deletionAfterLastEquality))
                     {
                         // Candidate found.
                         equalities.Push(i);
-                        preIns = postIns;
-                        preDel = postDel;
+                        (insertionBeforeLastEquality, deletionBeforeLastEquality) = (insertionAfterLastEquality, deletionAfterLastEquality);
                         lastEquality = diffs[i].Text;
                     }
                     else
@@ -494,17 +489,17 @@ namespace DiffMatchPatch
                         equalities.Clear();
                         lastEquality = string.Empty;
                     }
-                    postIns = postDel = false;
+                    insertionAfterLastEquality = deletionAfterLastEquality = false;
                 }
                 else
                 {  // An insertion or deletion.
                     if (diffs[i].Operation == Delete)
                     {
-                        postDel = true;
+                        deletionAfterLastEquality = true;
                     }
                     else
                     {
-                        postIns = true;
+                        insertionAfterLastEquality = true;
                     }
                     /*
                      * Five types to be split:
@@ -515,18 +510,18 @@ namespace DiffMatchPatch
                      * <ins>A</ins><del>B</del>X<del>C</del>
                      */
                     if ((lastEquality.Length != 0)
-                        && ((preIns && preDel && postIns && postDel)
+                        && ((insertionBeforeLastEquality && deletionBeforeLastEquality && insertionAfterLastEquality && deletionAfterLastEquality)
                             || ((lastEquality.Length < diffEditCost / 2)
-                                && (preIns ? 1 : 0) + (preDel ? 1 : 0) + (postIns ? 1 : 0)
-                                + (postDel ? 1 : 0) == 3)))
+                                && (insertionBeforeLastEquality ? 1 : 0) + (deletionBeforeLastEquality ? 1 : 0) + (insertionAfterLastEquality ? 1 : 0)
+                                + (deletionAfterLastEquality ? 1 : 0) == 3)))
                     {
                         diffs.Splice(equalities.Peek(), 1, Diff.Delete(lastEquality), Diff.Insert(lastEquality));
                         equalities.Pop();  // Throw away the equality we just deleted.
                         lastEquality = string.Empty;
-                        if (preIns && preDel)
+                        if (insertionBeforeLastEquality && deletionBeforeLastEquality)
                         {
                             // No changes made which could affect previous entry, keep going.
-                            postIns = postDel = true;
+                            insertionAfterLastEquality = deletionAfterLastEquality = true;
                             equalities.Clear();
                         }
                         else
@@ -537,7 +532,7 @@ namespace DiffMatchPatch
                             }
 
                             i = equalities.Count > 0 ? equalities.Peek() : -1;
-                            postIns = postDel = false;
+                            insertionAfterLastEquality = deletionAfterLastEquality = false;
                         }
                         changes = true;
                     }
@@ -590,10 +585,9 @@ namespace DiffMatchPatch
                     }
                     // Eliminate an equality that is smaller or equal to the edits on both
                     // sides of it.
-                    if (lastEquality != null && (lastEquality.Length
-                                                 <= Math.Max(lengthInsertions1, lengthDeletions1))
-                        && (lastEquality.Length
-                            <= Math.Max(lengthInsertions2, lengthDeletions2)))
+                    if (lastEquality != null 
+                        && (lastEquality.Length <= Math.Max(lengthInsertions1, lengthDeletions1))
+                        && (lastEquality.Length <= Math.Max(lengthInsertions2, lengthDeletions2)))
                     {
                         // Duplicate record.
 
@@ -637,7 +631,7 @@ namespace DiffMatchPatch
                     var overlapLength2 = TextUtil.CommonOverlap(insertion, deletion);
                     var minLength = Math.Min(deletion.Length, insertion.Length);
 
-                    Diff[] newdiffs = null;
+                    Diff[]? newdiffs = null;
                     if ((overlapLength1 >= overlapLength2) && (overlapLength1 >= minLength / 2.0))
                     {
                         // Overlap found.

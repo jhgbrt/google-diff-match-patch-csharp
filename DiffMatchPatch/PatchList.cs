@@ -27,7 +27,7 @@ namespace DiffMatchPatch
         {
             var paddingLength = patchMargin;
             var nullPaddingSb = new StringBuilder();
-            for (short x = 1; x <= paddingLength; x++)
+            for (var x = 1; x <= paddingLength; x++)
             {
                 nullPaddingSb.Append((char)x);
             }
@@ -60,72 +60,75 @@ namespace DiffMatchPatch
         /// objects.</summary>
         /// <param name="text"></param>
         /// <returns></returns>
-        public static List<Patch> Parse(string text)
+        public static List<Patch> Parse(string text) => ParseImpl(text).ToList();
+        static IEnumerable<Patch> ParseImpl(string text)
         {
-            var patches = new List<Patch>();
             if (text.Length == 0)
             {
-                return patches;
+                yield break;
             }
 
-            var lines = text.Split('\n');
+            var lines = text.SplitBy('\n').ToArray();
             var index = 0;
             while (index < lines.Length)
             {
-                var m = PatchHeader.Match(lines[index]);
+                var line = lines[index];
+                var m = PatchHeader.Match(line);
                 if (!m.Success)
                 {
-                    throw new ArgumentException("Invalid patch string: " + lines[index]);
+                    throw new ArgumentException("Invalid patch string: " + line);
                 }
 
-                (var start1, var length1) = m.GetStartLength(1, 2);
-                (var start2, var length2) = m.GetStartLength(3, 4);
+                (var start1, var length1) = m.GetStartAndLength(1, 2);
+                (var start2, var length2) = m.GetStartAndLength(3, 4);
 
                 index++;
 
-                var diffs = new List<Diff>();
-                while (index < lines.Length)
+                IEnumerable<Diff> CreateDiffs()
                 {
-                    if (!string.IsNullOrEmpty(lines[index]))
+                    while (index < lines.Length)
                     {
-                        var sign = lines[index][0];
-                        if (sign == '@')
+                        line = lines[index];
+                        if (!string.IsNullOrEmpty(line))
                         {
-                            // Start of next patch.
-                            break;
+                            var sign = line[0];
+                            if (sign == '@') // Start of next patch.
+                                break;
+                            yield return sign switch
+                            {
+                                '+' => Diff.Insert(line.Substring(1).Replace("+", "%2b").UrlDecoded()),
+                                '-' => Diff.Delete(line.Substring(1).Replace("+", "%2b").UrlDecoded()),
+                                _ => Diff.Equal(line.Substring(1).Replace("+", "%2b").UrlDecoded())
+                            };
+
                         }
-                        var line = lines[index].Substring(1).Replace("+", "%2b").UrlDecoded();
-                        diffs.Add(Diff.Create((Operation)sign, line));
+                        index++;
                     }
-                    index++;
                 }
 
-                var patch = new Patch
+
+                yield return new Patch
                 (
                     start1,
                     length1,
                     start2,
                     length2,
-                    diffs
+                    CreateDiffs()
                 );
-                patches.Add(patch);
             }
-            return patches;
         }
 
-        static (int start, int length) GetStartLength(this Match m, int startIndex, int lengthIndex)
+
+        static (int start, int length) GetStartAndLength(this Match m, int startIndex, int lengthIndex)
         {
             var lengthStr = m.Groups[lengthIndex].Value;
             var value = Convert.ToInt32(m.Groups[startIndex].Value);
-            switch (lengthStr)
+            return lengthStr switch
             {
-                case "0":
-                    return (value, 0);
-                case "":
-                    return (value - 1, 1);
-                default:
-                    return (value - 1, Convert.ToInt32(lengthStr));
-            }
+                "0" => (value, 0),
+                "" => (value - 1, 1),
+                _ => (value - 1, Convert.ToInt32(lengthStr))
+            };
         }
         
         /// <summary>
@@ -152,16 +155,16 @@ namespace DiffMatchPatch
         /// <param name="settings"></param>
         /// <returns>Two element Object array, containing the new text and an array of
         ///  bool values.</returns>
-        public static (string newText, bool[] results) Apply(this List<Patch> patches, string text,
+        public static (string newText, bool[] results) Apply(this IEnumerable<Patch> input, string text,
             MatchSettings matchSettings, PatchSettings settings)
         {
-            if (patches.Count == 0)
+            if (!input.Any())
             {
                 return (text, new bool[0]);
             }
 
             // Deep copy the patches so that no changes are made to originals.
-            patches = patches.DeepCopy();
+            var patches = input.DeepCopy();
 
             var nullPadding = patches.AddPadding(settings.PatchMargin);
             text = nullPadding + text + nullPadding;
@@ -296,80 +299,81 @@ namespace DiffMatchPatch
                 {
                     continue;
                 }
+                
                 var bigpatch = patches[x];
                 // Remove the big old patch.
                 patches.Splice(x--, 1);
+
                 var start1 = bigpatch.Start1;
                 var start2 = bigpatch.Start2;
                 var precontext = string.Empty;
                 var diffs = bigpatch.Diffs;
+
                 while (diffs.Count != 0)
                 {
                     // Create one of several smaller patches.
-                    var patch = new Patch();
+                    (int s1, int l1, int s2, int l2, List<Diff> thediffs) 
+                        = (start1 - precontext.Length, precontext.Length, start2 - precontext.Length, precontext.Length, new List<Diff>());
                     var empty = true;
-                    patch.Start1 = start1 - precontext.Length;
-                    patch.Start2 = start2 - precontext.Length;
+                    
                     if (precontext.Length != 0)
                     {
-                        patch.Length1 = patch.Length2 = precontext.Length;
-                        patch.AddDiff(Diff.Equal(precontext));
+                        thediffs.Add(Diff.Equal(precontext));
                     }
-                    while (diffs.Any() && patch.Length1 < patchSize - patchMargin)
+                    while (diffs.Any() && l1 < patchSize - patchMargin)
                     {
+                        var first = diffs[0];
                         var diffType = diffs[0].Operation;
                         var diffText = diffs[0].Text;
-                        if (diffType == Insert)
+
+                        if (first.Operation == Insert)
                         {
                             // Insertions are harmless.
-                            patch.Length2 += diffText.Length;
+                            l2 += diffText.Length;
                             start2 += diffText.Length;
-                            patch.AddDiff(diffs.First());
+                            thediffs.Add(Diff.Insert(diffText));
                             diffs.RemoveAt(0);
                             empty = false;
                         }
-                        else if (diffType == Delete && patch.Diffs.Count == 1
-                                 && patch.Diffs.First().Operation == Equal
-                                 && diffText.Length > 2 * patchSize)
+                        else if (first.IsLargeDelete(2*patchSize) && thediffs.Count == 1 && thediffs[0].Operation == Equal)
                         {
                             // This is a large deletion.  Let it pass in one chunk.
-                            patch.Length1 += diffText.Length;
+                            l1 += diffText.Length;
                             start1 += diffText.Length;
-                            empty = false;
-                            patch.AddDiff(Diff.Create(diffType, diffText));
+                            thediffs.Add(Diff.Delete(diffText));
                             diffs.RemoveAt(0);
+                            empty = false;
                         }
                         else
                         {
                             // Deletion or equality.  Only take as much as we can stomach.
-                            diffText = diffText.Substring(0, Math.Min(diffText.Length,
-                                patchSize - patch.Length1 - patchMargin));
-                            patch.Length1 += diffText.Length;
-                            start1 += diffText.Length;
+                            var cutoff = diffText.Substring(0, Math.Min(diffText.Length, patchSize - l1 - patchMargin));
+                            l1 += cutoff.Length;
+                            start1 += cutoff.Length;
                             if (diffType == Equal)
                             {
-                                patch.Length2 += diffText.Length;
-                                start2 += diffText.Length;
+                                l2 += cutoff.Length;
+                                start2 += cutoff.Length;
                             }
                             else
                             {
                                 empty = false;
                             }
-                            patch.AddDiff(Diff.Create(diffType, diffText));
-                            if (diffText == diffs[0].Text)
+                            thediffs.Add(Diff.Create(diffType, cutoff));
+                            if (cutoff == first.Text)
                             {
                                 diffs.RemoveAt(0);
                             }
                             else
                             {
-                                diffs[0] = diffs[0].Replace(diffs[0].Text.Substring(diffText.Length));
+                                diffs[0] = first with { Text = first.Text[cutoff.Length..] };
                             }
                         }
                     }
                     // Compute the head context for the next patch.
-                    precontext = patch.Diffs.Text2();
-                    precontext = precontext.Substring(Math.Max(0,
-                        precontext.Length - patchMargin));
+                    precontext = thediffs.Text2();
+                    // if (thediffs.Text2() != precontext) throw new E
+                    precontext = precontext[Math.Max(0, precontext.Length - patchMargin)..];
 
                     // Append the end context for this patch.
                     var text1 = diffs.Text1();
@@ -377,21 +381,22 @@ namespace DiffMatchPatch
 
                     if (postcontext.Length != 0)
                     {
-                        patch.Length1 += postcontext.Length;
-                        patch.Length2 += postcontext.Length;
-                        var lastDiff = patch.Diffs.Last();
-                        if (patch.Diffs.Any() && lastDiff.Operation == Equal)
+                        l1 += postcontext.Length;
+                        l2 += postcontext.Length;
+
+                        var lastDiff = thediffs.Last();
+                        if (thediffs.Any() && lastDiff.Operation == Equal)
                         {
-                            patch.Diffs[patch.Diffs.Count - 1] = lastDiff.Replace(lastDiff.Text + postcontext);
+                            thediffs[^1] = lastDiff.Append(postcontext);
                         }
                         else
                         {
-                            patch.AddDiff(Diff.Equal(postcontext));
+                            thediffs.Add(Diff.Equal(postcontext));
                         }
                     }
                     if (!empty)
                     {
-                        patches.Splice(++x, 0, patch);
+                        patches.Insert(++x, new Patch(s1, l1, s2, l2, thediffs));
                     }
                 }
             }

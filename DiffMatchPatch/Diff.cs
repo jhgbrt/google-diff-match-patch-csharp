@@ -25,6 +25,10 @@ namespace DiffMatchPatch
         }
 
         internal Diff Replace(string text) => this with { Text = text };
+        internal Diff Append(string text) => this with { Text = Text + text };
+        internal Diff Prepend(string text) => this with { Text = text + Text };
+
+        public bool IsEmpty => Text.Length == 0;
 
         /// <summary>
         /// Find the differences between two texts.
@@ -47,5 +51,8 @@ namespace DiffMatchPatch
 
         public static List<Diff> Compute(string text1, string text2, bool checkLines, CancellationToken token, bool optimizeForSpeed) 
             => DiffAlgorithm.Compute(text1, text2, checkLines, token, optimizeForSpeed);
+
+        public bool IsLargeDelete(int size) => Operation == Operation.Delete && Text.Length > size;
+
     }
 }

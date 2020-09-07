@@ -9,7 +9,7 @@ namespace DiffMatchPatch.Tests
     
     public class DiffList_ToDeltaTests
     {
-        List<Diff> diffs = new List<Diff>
+        IReadOnlyCollection<Diff> diffs = new List<Diff>
         {
             Diff.Equal("jump"),
             Diff.Delete("s"),

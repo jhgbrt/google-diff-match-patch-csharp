@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using static DiffMatchPatch.Operation;
 
 namespace DiffMatchPatch
 {
-    public class Patch
+    public record Patch
     {
         public Patch() { Diffs = new List<Diff>(); }
         public Patch(int start1, int length1, int start2, int length2, IEnumerable<Diff> diffs)
@@ -24,6 +25,7 @@ namespace DiffMatchPatch
             return this;
         }
 
+        
         public List<Diff> Diffs { get; }
         public int Start1 { get; internal set; }
         public int Start2 { get; internal set; }
@@ -83,18 +85,23 @@ namespace DiffMatchPatch
             return patchCopy;
         }
 
+        private void Deconstruct(out int start1, out int length1, out int start2, out int length2, out List<Diff> diffs)
+        {
+            start1 = Start1; length1 = Length1; start2 = Start2; length2 = Length2; diffs = Diffs.ToList();
+        }
         /// <summary>
         /// Increase the context until it is unique,
         /// but don't let the pattern expand beyond Match_MaxBits.</summary>
         /// <param name="text">Source text</param>
         /// <param name="patchMargin"></param>
-        internal void AddContext(string text, short patchMargin = 4)
+        internal static (int start1, int length1, int start2, int length2, List<Diff> diffs) AddContext(string text, int start1, int length1, int start2, int length2, List<Diff> diffs, short patchMargin = 4)
         {
             if (text.Length == 0)
             {
-                return;
+                return (start1, length1, start2, length2, diffs);
             }
-            var pattern = text.Substring(Start2, Length1);
+
+            var pattern = text.Substring(start2, length1);
             var padding = 0;
 
             // Look for the first and last matches of pattern in text.  If two
@@ -104,34 +111,36 @@ namespace DiffMatchPatch
                    && pattern.Length < Constants.MatchMaxBits - patchMargin - patchMargin)
             {
                 padding += patchMargin;
-                var begin = Math.Max(0, Start2 - padding);
-                pattern = text.Substring(begin, Math.Min(text.Length, Start2 + Length1 + padding) - begin);
+                var begin = Math.Max(0, start2 - padding);
+                pattern = text[begin..Math.Min(text.Length, start2 + length1 + padding)];
             }
             // Add one chunk for good luck.
             padding += patchMargin;
 
             // Add the prefix.
-            var begin1 = Math.Max(0, Start2 - padding);
-            var prefix = text.Substring(begin1, Start2 - begin1);
+            var begin1 = Math.Max(0, start2 - padding);
+            var prefix = text.Substring(begin1, start2 - begin1);
             if (prefix.Length != 0)
             {
-                Diffs.Insert(0, Diff.Equal(prefix));
+                diffs.Insert(0, Diff.Equal(prefix));
             }
             // Add the suffix.
-            var begin2 = Start2 + Length1;
-            var length = Math.Min(text.Length, Start2 + Length1 + padding) - begin2;
+            var begin2 = start2 + length1;
+            var length = Math.Min(text.Length, start2 + length1 + padding) - begin2;
             var suffix = text.Substring(begin2, length);
             if (suffix.Length != 0)
             {
-                Diffs.Add(Diff.Equal(suffix));
+                diffs.Add(Diff.Equal(suffix));
             }
 
             // Roll back the start points.
-            Start1 -= prefix.Length;
-            Start2 -= prefix.Length;
+            start1 -= prefix.Length;
+            start2 -= prefix.Length;
             // Extend the lengths.
-            Length1 += prefix.Length + suffix.Length;
-            Length2 += prefix.Length + suffix.Length;
+            length1 = length1 + prefix.Length + suffix.Length;
+            length2 = length2 + prefix.Length + suffix.Length;
+            
+            return (start1, length1, start2, length2, diffs);
         }
 
         /// <summary>
@@ -150,7 +159,7 @@ namespace DiffMatchPatch
             var diffs = Diff.Compute(text1, text2, diffTimeout);
             diffs.CleanupSemantic();
             diffs.CleanupEfficiency(diffEditCost);
-            return Compute(text1, diffs);
+            return Compute(text1, diffs).ToList();
         }
 
         /// <summary>
@@ -164,7 +173,7 @@ namespace DiffMatchPatch
             // Check for null inputs not needed since null can't be passed in C#.
             // No origin string provided, compute our own.
             var text1 = diffs.Text1();
-            return Compute(text1, diffs);
+            return Compute(text1, diffs).ToList();
         }
 
         /// <summary>
@@ -175,15 +184,14 @@ namespace DiffMatchPatch
         /// <param name="diffs"></param>
         /// <param name="patchMargin"></param>
         /// <returns></returns>
-        public static List<Patch> Compute(string text1, IEnumerable<Diff> diffs, short patchMargin = 4)
+        public static IEnumerable<Patch> Compute(string text1, IEnumerable<Diff> diffs, short patchMargin = 4)
         {
             // Check for null inputs not needed since null can't be passed in C#.
-            var patches = new List<Patch>();
             if (!diffs.Any())
             {
-                return patches;  // Get rid of the null case.
+                yield break;  // Get rid of the null case.
             }
-            var patch = new Patch();
+
             var charCount1 = 0;  // Number of characters into the text1 string.
             var charCount2 = 0;  // Number of characters into the text2 string.
             // Start with text1 (prepatch_text) and apply the Diffs until we arrive at
@@ -191,46 +199,48 @@ namespace DiffMatchPatch
             // context info.
             var prepatchText = text1;
             var postpatchText = text1;
+            List<Diff> thediffs = new List<Diff>();
+            int start1 = 0, length1 = 0, start2 = 0, length2 = 0;
             foreach (var aDiff in diffs)
             {
-                if (!patch.Diffs.Any() && aDiff.Operation != Equal)
+                if (!thediffs.Any() && aDiff.Operation != Equal)
                 {
                     // A new patch starts here.
-                    patch.Start1 = charCount1;
-                    patch.Start2 = charCount2;
+                    start1 = charCount1;
+                    start2 = charCount2;
                 }
 
                 switch (aDiff.Operation)
                 {
                     case Insert:
-                        patch.AddDiff(aDiff);
-                        patch.Length2 += aDiff.Text.Length;
+                        thediffs.Add(aDiff);
+                        length2 += aDiff.Text.Length;
                         postpatchText = postpatchText.Insert(charCount2, aDiff.Text);
                         break;
                     case Delete:
-                        patch.Length1 += aDiff.Text.Length;
-                        patch.AddDiff(aDiff);
+                        length1 += aDiff.Text.Length;
+                        thediffs.Add(aDiff);
                         postpatchText = postpatchText.Remove(charCount2,
                            aDiff.Text.Length);
                         break;
                     case Equal:
-                        if (aDiff.Text.Length <= 2 * patchMargin
-                            && patch.Diffs.Any() && aDiff != diffs.Last())
+                        if (aDiff.Text.Length <= 2 * patchMargin && thediffs.Any() && aDiff != diffs.Last())
                         {
                             // Small equality inside a patch.
-                            patch.AddDiff(aDiff);
-                            patch.Length1 += aDiff.Text.Length;
-                            patch.Length2 += aDiff.Text.Length;
+                            thediffs.Add(aDiff);
+                            length1 += aDiff.Text.Length;
+                            length2 += aDiff.Text.Length;
                         }
 
                         if (aDiff.Text.Length >= 2 * patchMargin)
                         {
                             // Time for a new patch.
-                            if (patch.Diffs.Any())
+                            if (thediffs.Any())
                             {
-                                patch.AddContext(prepatchText);
-                                patches.Add(patch);
-                                patch = new Patch();
+                                (start1, length1, start2, length2, thediffs) = AddContext(prepatchText, start1, length1, start2, length2, thediffs);
+                                yield return new Patch(start1, length1, start2, length2, thediffs);
+                                start1 = start2 = length1 = length2 = 0;
+                                thediffs.Clear();
                                 // Unlike Unidiff, our patch lists have a rolling context.
                                 // http://code.google.com/p/google-diff-match-patch/wiki/Unidiff
                                 // Update prepatch text & pos to reflect the application of the
@@ -253,16 +263,14 @@ namespace DiffMatchPatch
                 }
             }
             // Pick up the leftover patch if not empty.
-            if (patch.Diffs.Any())
+            if (thediffs.Any())
             {
-                patch.AddContext(prepatchText);
-                patches.Add(patch);
+                (start1, length1, start2, length2, thediffs) = AddContext(prepatchText, start1, length1, start2, length2, thediffs);
+                yield return new Patch(start1, length1, start2, length2, thediffs);
             }
-
-            return patches;
         }
 
-        public void AddPaddingBeforeFirstDiff(string nullPadding)
+        internal void AddPaddingBeforeFirstDiff(string nullPadding)
         {
             if (Diffs.Count == 0 || Diffs[0].Operation != Equal)
             {

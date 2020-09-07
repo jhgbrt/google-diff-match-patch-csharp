@@ -1,12 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.1</TargetFrameworks>
     <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="IndexRange" Version="1.0.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.7.1" />
     <PackageReference Include="System.Memory" Version="4.5.4" />
   </ItemGroup>
 </Project>
