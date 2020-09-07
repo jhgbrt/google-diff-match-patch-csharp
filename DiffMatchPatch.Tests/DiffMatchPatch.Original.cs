@@ -1,4 +1,5 @@
-﻿/*
+﻿#pragma warning disable IDE0057,IDE0028,IDE0044,IDE0056,IDE0019,IDE0041,IDE0054,IDE0059,IDE0060
+/*
  * Diff Match and Patch
  * Copyright 2018 The diff-match-patch Authors.
  * https://github.com/google/diff-match-patch

@@ -199,7 +199,7 @@ namespace DiffMatchPatch
 
             return text1.Length > text2.Length ? hm : hm.Reverse();
         }
-        private static Regex HEXCODE = new Regex("%[0-9A-F][0-9A-F]");
+        private static readonly Regex HEXCODE = new Regex("%[0-9A-F][0-9A-F]");
 
        
         /// <summary>

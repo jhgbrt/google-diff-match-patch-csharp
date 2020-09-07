@@ -106,9 +106,9 @@ namespace DiffMatchPatch
                                 break;
                             yield return sign switch
                             {
-                                '+' => Diff.Insert(line.Substring(1).Replace("+", "%2b").UrlDecoded()),
-                                '-' => Diff.Delete(line.Substring(1).Replace("+", "%2b").UrlDecoded()),
-                                _ => Diff.Equal(line.Substring(1).Replace("+", "%2b").UrlDecoded())
+                                '+' => Diff.Insert(line[1..].Replace("+", "%2b").UrlDecoded()),
+                                '-' => Diff.Delete(line[1..].Replace("+", "%2b").UrlDecoded()),
+                                _ => Diff.Equal(line[1..].Replace("+", "%2b").UrlDecoded())
                             };
 
                         }
@@ -235,12 +235,12 @@ namespace DiffMatchPatch
                     {
                         actualEndLoc = Math.Min(endLoc + Constants.MatchMaxBits, text.Length);
                     }
-                    var text2 = text.Substring(startLoc, actualEndLoc - startLoc);
+                    var text2 = text[startLoc..actualEndLoc];
                     if (text1 == text2)
                     {
                         // Perfect match, just shove the Replacement text in.
                         text = text.Substring(0, startLoc) + aPatch.Diffs.Text2()
-                               + text.Substring(startLoc + text1.Length);
+                               + text[(startLoc + text1.Length)..];
                     }
                     else
                     {

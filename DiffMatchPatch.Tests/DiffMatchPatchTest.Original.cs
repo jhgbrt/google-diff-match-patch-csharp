@@ -1,4 +1,5 @@
-﻿namespace Original
+﻿#pragma warning disable IDE0057,IDE0028,IDE0044,IDE0056,IDE0019,IDE0041,IDE0054,IDE0059,IDE0060,IDE0017
+namespace Original
 {/*
  * Diff Match and Patch -- Test Harness
  * Copyright 2018 The diff-match-patch Authors.

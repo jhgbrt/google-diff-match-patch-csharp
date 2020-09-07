@@ -149,7 +149,7 @@ namespace DiffMatchPatch
                 }
                 // Each token begins with a one character parameter which specifies the
                 // operation of this token (delete, insert, equality).
-                var param = token.Substring(1);
+                var param = token[1..];
                 var operation = FromDelta(token[0]);
                 int n = 0;
                 if (operation != Insert)
@@ -296,7 +296,7 @@ namespace DiffMatchPatch
                     {
                         // Shift the edit over the next equality.
                         diffs[i - 1] = previous.Replace(previous.Text + next.Text);
-                        diffs[i] = current.Replace(current.Text.Substring(next.Text.Length) + next.Text);
+                        diffs[i] = current.Replace(current.Text[next.Text.Length..] + next.Text);
                         diffs.Splice(i + 1, 1);
                         changes = true;
                     }
@@ -337,7 +337,7 @@ namespace DiffMatchPatch
                     var commonOffset = TextUtil.CommonSuffix(equality1, edit);
                     if (commonOffset > 0)
                     {
-                        var commonString = edit.Substring(edit.Length - commonOffset);
+                        var commonString = edit[^commonOffset..];
                         equality1 = equality1.Substring(0, equality1.Length - commonOffset);
                         edit = commonString + edit.Substring(0, edit.Length - commonOffset);
                         equality2 = commonString + equality2;
@@ -352,8 +352,8 @@ namespace DiffMatchPatch
                     while (edit.Length != 0 && equality2.Length != 0 && edit[0] == equality2[0])
                     {
                         equality1 += edit[0];
-                        edit = edit.Substring(1) + equality2[0];
-                        equality2 = equality2.Substring(1);
+                        edit = edit[1..] + equality2[0];
+                        equality2 = equality2[1..];
                         var score = DiffCleanupSemanticScore(equality1, edit) + DiffCleanupSemanticScore(edit, equality2);
                         // The >= encourages trailing rather than leading whitespace on
                         // edits.
@@ -379,7 +379,7 @@ namespace DiffMatchPatch
                             .ToArray();
 
                         diffs.Splice(pointer - 1, 3, newDiffs);
-                        pointer = pointer - (3 - newDiffs.Length);
+                        pointer -= (3 - newDiffs.Length);
                     }
                 }
                 pointer++;
@@ -644,7 +644,7 @@ namespace DiffMatchPatch
                         {
                             Diff.Delete(deletion.Slice(0, deletion.Length - overlapLength1).ToArray()),
                             Diff.Equal(insertion.Slice(0, overlapLength1).ToArray()),
-                            Diff.Insert(insertion.Slice(overlapLength1).ToArray())
+                            Diff.Insert(insertion[overlapLength1..].ToArray())
                         };
                     }
                     else if ((overlapLength2 >= overlapLength1) && overlapLength2 >= minLength / 2.0)
@@ -655,7 +655,7 @@ namespace DiffMatchPatch
                         {
                                 Diff.Insert(insertion.Slice(0, insertion.Length - overlapLength2)),
                                 Diff.Equal(deletion.Slice(0, overlapLength2)),
-                                Diff.Delete(deletion.Slice(overlapLength2))
+                                Diff.Delete(deletion[overlapLength2..])
                         };
                     }
 

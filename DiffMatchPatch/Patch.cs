@@ -57,7 +57,7 @@ namespace DiffMatchPatch
             {
                 var firstDiff = Diffs[0];
                 var extraLength = padding.Length - firstDiff.Text.Length;
-                var text = padding.Substring(firstDiff.Text.Length) + firstDiff.Text;
+                var text = padding[firstDiff.Text.Length..] + firstDiff.Text;
 
                 builder.RemoveAt(0);
                 builder.Insert(0, firstDiff.Replace(text));

@@ -4,6 +4,9 @@
     <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netcoreapp3.1|AnyCPU'">
+    <NoWarn>1701;1702;IDE1006</NoWarn>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiffMatchPatch\DiffMatchPatch.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />

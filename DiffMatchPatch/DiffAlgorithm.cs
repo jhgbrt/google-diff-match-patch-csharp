@@ -38,12 +38,12 @@ namespace DiffMatchPatch
 
             // Trim off common prefix (speedup).
             var commonprefix = text1.Slice(0, commonlength);
-            text1 = text1.Slice(commonlength);
-            text2 = text2.Slice(commonlength);
+            text1 = text1[commonlength..];
+            text2 = text2[commonlength..];
 
             // Trim off common suffix (speedup).
             commonlength = TextUtil.CommonSuffix(text1, text2);
-            var commonsuffix = text1.Slice(text1.Length - commonlength);
+            var commonsuffix = text1[^commonlength..];
             text1 = text1.Slice(0, text1.Length - commonlength);
             text2 = text2.Slice(0, text2.Length - commonlength);
 
@@ -113,7 +113,7 @@ namespace DiffMatchPatch
                     {
                         Diff.Delete(longtext.Slice(0, i)),
                         Diff.Equal(shorttext),
-                        Diff.Delete(longtext.Slice(i + shorttext.Length))
+                        Diff.Delete(longtext[(i + shorttext.Length)..])
                     };
                 }
                 else
@@ -122,7 +122,7 @@ namespace DiffMatchPatch
                     {
                         Diff.Insert(longtext.Slice(0, i)),
                         Diff.Equal(shorttext),
-                        Diff.Insert(longtext.Slice(i + shorttext.Length))
+                        Diff.Insert(longtext[(i + shorttext.Length)..])
                     };
                 }
             }
@@ -395,8 +395,8 @@ namespace DiffMatchPatch
         {
             var text1A = text1.Slice(0, x);
             var text2A = text2.Slice(0, y);
-            var text1B = text1.Slice(x);
-            var text2B = text2.Slice(y);
+            var text1B = text1[x..];
+            var text2B = text2[y..];
 
             // Compute both Diffs serially.
             var diffs = Compute(text1A, text2A, false, token, optimizeForSpeed);

@@ -23,9 +23,9 @@ namespace DiffMatchPatch
             var end = -1;
             while (end < text.Length - 1)
             {
-                var i = text.Slice(start).IndexOf('\n');
+                var i = text[start..].IndexOf('\n');
                 end = _lineArray.Count == maxLines || i == -1 ? text.Length - 1 : i + start;
-                var line = text.Slice(start, end + 1 - start).ToString();
+                var line = text[start..(end + 1)].ToString();
                 EnsureHashed(line);
                 sb.Append(this[line]);
                 start = end + 1;

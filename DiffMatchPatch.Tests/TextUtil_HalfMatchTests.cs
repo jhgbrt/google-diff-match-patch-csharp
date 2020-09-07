@@ -1,3 +1,4 @@
+#pragma warning disable IDE0057
 using System;
 using Xunit;
 
