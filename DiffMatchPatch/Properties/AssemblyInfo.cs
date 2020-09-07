@@ -2,3 +2,4 @@
 
 
 [assembly: InternalsVisibleTo("DiffMatchPatch.Tests")]
+[assembly: InternalsVisibleTo("DiffMatchPatch.PerformanceTest")]

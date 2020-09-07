@@ -180,10 +180,8 @@ namespace DiffMatchPatch
             text2 = compressor.Compress(text2, char.MaxValue);
             var diffs = Compute(text1, text2, false, token, optimizeForSpeed)
                 .Select(diff => diff.Replace(compressor.Decompress(diff.Text)))
-                .ToList();
-
-            // Eliminate freak matches (e.g. blank lines)
-            diffs.CleanupSemantic();
+                .ToList()
+                .CleanupSemantic(); // Eliminate freak matches (e.g. blank lines)
 
             // Rediff any replacement blocks, this time character-by-character.
             // Add a dummy entry at the end.

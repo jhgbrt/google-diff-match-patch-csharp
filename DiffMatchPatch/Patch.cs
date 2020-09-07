@@ -17,7 +17,8 @@ namespace DiffMatchPatch
 
         internal Patch AddPaddingInFront(string padding)
         {
-            (var s1, var l1, var s2, var l2, ImmutableList<Diff> diffs) = this;
+            (var s1, var l1, var s2, var l2, var diffs) = this;
+
             var builder = diffs.ToBuilder();
             (s1, l1, s2, l2) = AddPaddingInFront(builder, s1, l1, s2, l2, padding);
 
@@ -26,17 +27,19 @@ namespace DiffMatchPatch
 
         internal Patch AddPaddingAtEnd(string padding)
         {
-            (var s1, var l1, var s2, var l2, ImmutableList<Diff> diffs) = this;
+            (var s1, var l1, var s2, var l2, var diffs) = this;
+
             var builder = diffs.ToBuilder();
             (s1, l1, s2, l2) = AddPaddingAtEnd(builder, s1, l1, s2, l2, padding);
+
             return new Patch(s1, l1, s2, l2, builder.ToImmutable());
         }
 
         internal Patch AddPadding(string padding)
         {
-            (var s1, var l1, var s2, var l2, ImmutableList<Diff> diffs) = this;
-            var builder = diffs.ToBuilder();
+            (var s1, var l1, var s2, var l2, var diffs) = this;
 
+            var builder = diffs.ToBuilder();
             (s1, l1, s2, l2) = AddPaddingInFront(builder, s1, l1, s2, l2, padding);
             (s1, l1, s2, l2) = AddPaddingAtEnd(builder, s1, l1, s2, l2, padding);
 
@@ -140,15 +143,8 @@ namespace DiffMatchPatch
         /// <param name="diffTimeout">timeout in seconds</param>
         /// <param name="diffEditCost">Cost of an empty edit operation in terms of edit characters.</param>
         /// <returns>List of Patch objects</returns>
-        public static List<Patch> Compute(string text1, string text2, float diffTimeout = 0, short diffEditCost = 4)
-        {
-            // Check for null inputs not needed since null can't be passed in C#.
-            // No Diffs provided, compute our own.
-            var diffs = Diff.Compute(text1, text2, diffTimeout);
-            diffs.CleanupSemantic();
-            diffs.CleanupEfficiency(diffEditCost);
-            return Compute(text1, diffs).ToList();
-        }
+        public static ImmutableList<Patch> Compute(string text1, string text2, float diffTimeout = 0, short diffEditCost = 4) 
+            => Compute(text1, Diff.Compute(text1, text2, diffTimeout).CleanupSemantic().CleanupEfficiency(diffEditCost)).ToImmutableList();
 
         /// <summary>
         /// Compute a list of patches to turn text1 into text2.
@@ -156,13 +152,8 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="diffs">array of diff objects for text1 to text2</param>
         /// <returns>List of Patch objects</returns>
-        public static List<Patch> FromDiffs(IEnumerable<Diff> diffs)
-        {
-            // Check for null inputs not needed since null can't be passed in C#.
-            // No origin string provided, compute our own.
-            var text1 = diffs.Text1();
-            return Compute(text1, diffs).ToList();
-        }
+        public static ImmutableList<Patch> FromDiffs(IEnumerable<Diff> diffs) 
+            => Compute(diffs.Text1(), diffs).ToImmutableList();
 
         /// <summary>
         /// Compute a list of patches to turn text1 into text2.
@@ -174,7 +165,6 @@ namespace DiffMatchPatch
         /// <returns></returns>
         public static IEnumerable<Patch> Compute(string text1, IEnumerable<Diff> diffs, short patchMargin = 4)
         {
-            // Check for null inputs not needed since null can't be passed in C#.
             if (!diffs.Any())
             {
                 yield break;  // Get rid of the null case.

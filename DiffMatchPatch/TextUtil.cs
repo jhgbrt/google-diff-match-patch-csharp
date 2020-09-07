@@ -279,8 +279,6 @@ namespace DiffMatchPatch
 
         internal static int FindBestMatchIndex(this string text, string pattern, int loc, MatchSettings settings)
         {
-            // Check for null inputs not needed since null can't be passed in C#.
-
             loc = Math.Max(0, Math.Min(loc, text.Length));
             if (text == pattern)
             {

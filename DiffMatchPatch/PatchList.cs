@@ -13,16 +13,8 @@ namespace DiffMatchPatch
     public static class PatchList
     {
 
-        internal static string NullPadding(short paddingLength = 4)
-        {
-            var nullPaddingSb = new StringBuilder();
-            for (var x = 1; x <= paddingLength; x++)
-            {
-                nullPaddingSb.Append((char)x);
-            }
-            var nullPadding = nullPaddingSb.ToString();
-            return nullPadding;
-        }
+        internal static string NullPadding(short paddingLength = 4) => new string(Enumerable.Range(1, paddingLength).Select(i => (char)i).ToArray());
+
         /// <summary>
         /// Add some padding on text start and end so that edges can match something.
         /// Intended to be called only from within patch_apply.
@@ -181,7 +173,6 @@ namespace DiffMatchPatch
                 return (text, new bool[0]);
             }
 
-            // Deep copy the patches so that no changes are made to originals.
             var nullPadding = NullPadding(settings.PatchMargin);
             text = nullPadding + text + nullPadding;
 
@@ -205,13 +196,13 @@ namespace DiffMatchPatch
                     // patch_splitMax will only provide an oversized pattern
                     // in the case of a monster delete.
                     startLoc = text.FindBestMatchIndex(text1.Substring(0, Constants.MatchMaxBits), expectedLoc, matchSettings);
-                    // Check for null inputs not needed since null can't be passed in C#.
+                    
                     if (startLoc != -1)
                     {
                         endLoc = text.FindBestMatchIndex(
-                            text1.Substring(text1.Length - Constants.MatchMaxBits), expectedLoc + text1.Length - Constants.MatchMaxBits, matchSettings
+                            text1[^Constants.MatchMaxBits..], expectedLoc + text1.Length - Constants.MatchMaxBits, matchSettings
                             );
-                        // Check for null inputs not needed since null can't be passed in C#.
+                        
                         if (endLoc == -1 || startLoc >= endLoc)
                         {
                             // Can't find valid trailing context.  Drop this patch.
@@ -222,7 +213,6 @@ namespace DiffMatchPatch
                 else
                 {
                     startLoc = text.FindBestMatchIndex(text1, expectedLoc, matchSettings);
-                    // Check for null inputs not needed since null can't be passed in C#.
                 }
                 if (startLoc == -1)
                 {
@@ -323,7 +313,7 @@ namespace DiffMatchPatch
                 (var start1, _, var start2, _, var diffs) = bigpatch;
 
                 var precontext = string.Empty;
-                while (diffs.Count != 0)
+                while (diffs.Any())
                 {
                     // Create one of several smaller patches.
                     (int s1, int l1, int s2, int l2, List<Diff> thediffs) 

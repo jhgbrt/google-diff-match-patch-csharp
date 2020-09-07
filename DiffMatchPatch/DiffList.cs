@@ -184,7 +184,7 @@ namespace DiffMatchPatch
         /// Any edit section can move as long as it doesn't cross an equality.
         /// </summary>
         /// <param name="diffs">list of Diffs</param>
-        internal static void CleanupMerge(this List<Diff> diffs)
+        internal static List<Diff> CleanupMerge(this List<Diff> diffs)
         {
             // Add a dummy entry at the beginning & end.
             diffs.Insert(0, Diff.Empty);
@@ -307,6 +307,7 @@ namespace DiffMatchPatch
             {
                 diffs.CleanupMerge();
             }
+            return diffs;
         }
 
         /// <summary>
@@ -315,7 +316,7 @@ namespace DiffMatchPatch
         /// e.g: The c<ins>at c</ins>ame. -> The <ins>cat </ins>came.
         /// </summary>
         /// <param name="diffs"></param>
-        internal static void CleanupSemanticLossless(this List<Diff> diffs)
+        internal static List<Diff> CleanupSemanticLossless(this List<Diff> diffs)
         {
             var pointer = 1;
             // Intentionally ignore the first and last element (don't need checking).
@@ -383,6 +384,7 @@ namespace DiffMatchPatch
                 }
                 pointer++;
             }
+            return diffs;
         }
 
         /// <summary>
@@ -410,10 +412,10 @@ namespace DiffMatchPatch
             Index i = ^1;
             var char1 = one[^1];
             var char2 = two[0];
-            var nonAlphaNumeric1 = !Char.IsLetterOrDigit(char1);
-            var nonAlphaNumeric2 = !Char.IsLetterOrDigit(char2);
-            var whitespace1 = Char.IsWhiteSpace(char1);
-            var whitespace2 = Char.IsWhiteSpace(char2);
+            var nonAlphaNumeric1 = !char.IsLetterOrDigit(char1);
+            var nonAlphaNumeric2 = !char.IsLetterOrDigit(char2);
+            var whitespace1 = char.IsWhiteSpace(char1);
+            var whitespace2 = char.IsWhiteSpace(char2);
             var lineBreak1 = char1 == '\n' || char1 == '\r';
             var lineBreak2 = char1 == '\n' || char1 == '\r';
             var blankLine1 = lineBreak1 && BlankLineEnd.IsMatch(one);
@@ -456,7 +458,7 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="diffs"></param>
         /// <param name="diffEditCost"></param>
-        public static void CleanupEfficiency(this List<Diff> diffs, short diffEditCost = 4)
+        internal static List<Diff> CleanupEfficiency(this List<Diff> diffs, short diffEditCost = 4)
         {
             var changes = false;
             // Stack of indices where equalities are found.
@@ -543,13 +545,15 @@ namespace DiffMatchPatch
             {
                 diffs.CleanupMerge();
             }
+
+            return diffs;
         }
 
         /// <summary>
         /// Reduce the number of edits by eliminating semantically trivial equalities.
         /// </summary>
         /// <param name="diffs"></param>
-        public static void CleanupSemantic(this List<Diff> diffs)
+        internal static List<Diff> CleanupSemantic(this List<Diff> diffs)
         {
             // Stack of indices where equalities are found.
             var equalities = new Stack<int>();
@@ -665,6 +669,7 @@ namespace DiffMatchPatch
                 }
                 pointer++;
             }
+            return diffs;
         }
 
 
