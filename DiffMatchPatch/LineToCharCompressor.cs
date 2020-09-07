@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,25 +13,24 @@ namespace DiffMatchPatch
         /// <param name="text"></param>
         /// <param name="maxLines"></param>
         /// <returns></returns>
-        public string Compress(string text, int maxLines = char.MaxValue) 
-            => Encode(text, maxLines).Aggregate(new StringBuilder(), (sb, c) => sb.Append(c)).ToString();
+        public string Compress(ReadOnlySpan<char> text, int maxLines = char.MaxValue) 
+            => Encode(text.ToString(), maxLines);
 
-        IEnumerable<char> Encode(string text, int maxLines)
+        string Encode(ReadOnlySpan<char> text, int maxLines)
         {
+            var sb = new StringBuilder();
             var start = 0;
             var end = -1;
             while (end < text.Length - 1)
             {
-                end = _lineArray.Count == maxLines ? text.Length - 1 : text.IndexOf('\n', start);
-                if (end == -1)
-                {
-                    end = text.Length - 1;
-                }
-                var line = text.Substring(start, end + 1 - start);
+                var i = text.Slice(start).IndexOf('\n');
+                end = _lineArray.Count == maxLines || i == -1 ? text.Length - 1 : i + start;
+                var line = text.Slice(start, end + 1 - start).ToString();
                 EnsureHashed(line);
-                yield return this[line];
+                sb.Append(this[line]);
                 start = end + 1;
             }
+            return sb.ToString();
         }
 
         /// <summary>

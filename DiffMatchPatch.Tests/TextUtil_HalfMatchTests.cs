@@ -103,7 +103,6 @@ namespace DiffMatchPatch.Tests
         {
             // No match.
             Assert.Equal(new string[] { "a", "z", "12", "90", "345678" }, diff_halfMatch("a345678z", "1234567890"));
-            return;
 
             Assert.Null(diff_halfMatch("1234567890", "abcdef"));
 

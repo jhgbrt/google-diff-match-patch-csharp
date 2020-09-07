@@ -20,7 +20,7 @@ namespace DiffMatchPatch
         /// <param name="token">Cancellation token for cooperative cancellation</param>
         /// <param name="optimizeForSpeed">Should optimizations be enabled?</param>
         /// <returns></returns>
-        internal static List<Diff> Compute(string text1, string text2, bool checklines, CancellationToken token, bool optimizeForSpeed)
+        internal static List<Diff> Compute(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, bool checklines, CancellationToken token, bool optimizeForSpeed)
         {
             if (text1.Length == text2.Length && text1.Length == 0)
                 return new List<Diff>();
@@ -37,15 +37,15 @@ namespace DiffMatchPatch
             }
 
             // Trim off common prefix (speedup).
-            var commonprefix = text1.Substring(0, commonlength);
-            text1 = text1.Substring(commonlength);
-            text2 = text2.Substring(commonlength);
+            var commonprefix = text1.Slice(0, commonlength);
+            text1 = text1.Slice(commonlength);
+            text2 = text2.Slice(commonlength);
 
             // Trim off common suffix (speedup).
             commonlength = TextUtil.CommonSuffix(text1, text2);
-            var commonsuffix = text1.Substring(text1.Length - commonlength);
-            text1 = text1.Substring(0, text1.Length - commonlength);
-            text2 = text2.Substring(0, text2.Length - commonlength);
+            var commonsuffix = text1.Slice(text1.Length - commonlength);
+            text1 = text1.Slice(0, text1.Length - commonlength);
+            text2 = text2.Slice(0, text2.Length - commonlength);
 
             // Compute the diff on the middle block.
             var diffs = ComputeImpl(text1, text2, checklines, token, optimizeForSpeed);
@@ -75,8 +75,8 @@ namespace DiffMatchPatch
         /// <param name="optimizeForSpeed">Should optimizations be enabled?</param>
         /// <returns></returns>
         private static List<Diff> ComputeImpl(
-            string text1,
-            string text2,
+            ReadOnlySpan<char> text1,
+            ReadOnlySpan<char> text2,
             bool checklines, CancellationToken token, bool optimizeForSpeed)
         {
 
@@ -108,18 +108,18 @@ namespace DiffMatchPatch
                 {
                     return new List<Diff>
                     {
-                        Diff.Delete(longtext.Substring(0, i)),
+                        Diff.Delete(longtext.Slice(0, i)),
                         Diff.Equal(shorttext),
-                        Diff.Delete(longtext.Substring(i + shorttext.Length))
+                        Diff.Delete(longtext.Slice(i + shorttext.Length))
                     };
                 }
                 else
                 {
                     return new List<Diff>
                     {
-                        Diff.Insert(longtext.Substring(0, i)),
+                        Diff.Insert(longtext.Slice(0, i)),
                         Diff.Equal(shorttext),
-                        Diff.Insert(longtext.Substring(i + shorttext.Length))
+                        Diff.Insert(longtext.Slice(i + shorttext.Length))
                     };
                 }
             }
@@ -172,7 +172,7 @@ namespace DiffMatchPatch
         /// <param name="token"></param>
         /// <param name="optimizeForSpeed"></param>
         /// <returns></returns>
-        private static List<Diff> LineDiff(string text1, string text2, CancellationToken token, bool optimizeForSpeed)
+        private static List<Diff> LineDiff(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, CancellationToken token, bool optimizeForSpeed)
         {
             // Scan the text on a line-by-line basis first.
             var compressor = new LineToCharCompressor();
@@ -237,7 +237,7 @@ namespace DiffMatchPatch
         /// <param name="token"></param>
         /// <param name="optimizeForSpeed"></param>
         /// <returns></returns>
-        internal static List<Diff> MyersDiffBisect(string text1, string text2, CancellationToken token, bool optimizeForSpeed)
+        internal static List<Diff> MyersDiffBisect(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, CancellationToken token, bool optimizeForSpeed)
         {
             // Cache the text lengths to prevent multiple calls.
             var text1Length = text1.Length;
@@ -389,12 +389,12 @@ namespace DiffMatchPatch
         /// <param name="token"></param>
         /// <param name="optimizeForSpeed"></param>
         /// <returns></returns>
-        private static List<Diff> BisectSplit(string text1, string text2, int x, int y, CancellationToken token, bool optimizeForSpeed)
+        private static List<Diff> BisectSplit(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, int x, int y, CancellationToken token, bool optimizeForSpeed)
         {
-            var text1A = text1.Substring(0, x);
-            var text2A = text2.Substring(0, y);
-            var text1B = text1.Substring(x);
-            var text2B = text2.Substring(y);
+            var text1A = text1.Slice(0, x);
+            var text2A = text2.Slice(0, y);
+            var text1B = text1.Slice(x);
+            var text2B = text2.Slice(y);
 
             // Compute both Diffs serially.
             var diffs = Compute(text1A, text2A, false, token, optimizeForSpeed);
