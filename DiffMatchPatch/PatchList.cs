@@ -1,21 +1,28 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Transactions;
 using static DiffMatchPatch.Operation;
 
 namespace DiffMatchPatch
 {
     public static class PatchList
     {
-        /// <summary>
-        /// Given an array of patches, return another array that is identical.
-        /// </summary>
-        /// <param name="patches"></param>
-        /// <returns></returns>
-        private static List<Patch> DeepCopy(this IEnumerable<Patch> patches) => patches.ToList();
 
+        internal static string NullPadding(short paddingLength = 4)
+        {
+            var nullPaddingSb = new StringBuilder();
+            for (var x = 1; x <= paddingLength; x++)
+            {
+                nullPaddingSb.Append((char)x);
+            }
+            var nullPadding = nullPaddingSb.ToString();
+            return nullPadding;
+        }
         /// <summary>
         /// Add some padding on text start and end so that edges can match something.
         /// Intended to be called only from within patch_apply.
@@ -23,72 +30,46 @@ namespace DiffMatchPatch
         /// <param name="patches"></param>
         /// <param name="patchMargin"></param>
         /// <returns>The padding string added to each side.</returns>
-        internal static string AddPadding(this List<Patch> patches, short patchMargin = 4)
+        internal static IEnumerable<Patch> AddPadding(this IEnumerable<Patch> patches, string padding)
         {
-            var paddingLength = patchMargin;
-            var nullPaddingSb = new StringBuilder();
-            for (var x = 1; x <= paddingLength; x++)
-            {
-                nullPaddingSb.Append((char)x);
-            }
-            var nullPadding = nullPaddingSb.ToString();
+            var paddingLength = padding.Length;
 
-            // Bump all the patches forward.
-            for (int i = 0; i < patches.Count; i++)
-            {
-                patches[i] = patches[i] with { Start1 = patches[i].Start1 + paddingLength, Start2 = patches[i].Start2 + paddingLength };
-            }
+            var enumerator = patches.GetEnumerator();
 
-            patches[0] = patches[0].AddPaddingBeforeFirstDiff(nullPadding);
-            patches[^1] = patches[^1].AddPaddingAfterLastDiff(nullPadding);
+            if (!enumerator.MoveNext())
+                yield break;
 
-            return nullPadding;
-        }
-        private static Patch AddPaddingBeforeFirstDiff(this Patch patch, string nullPadding)
-        {
-            if (patch.Diffs.Count == 0 || patch.Diffs[0].Operation != Equal)
+            Patch current = enumerator.Current.Bump(paddingLength);
+            Patch next = current;
+            bool isfirst = true;
+            while (true)
             {
-                // Add nullPadding equality.
-                return new Patch(patch.Start1 - nullPadding.Length, patch.Length1 + nullPadding.Length, patch.Start2 - nullPadding.Length, patch.Length2 + nullPadding.Length, patch.Diffs.Insert(0, Diff.Equal(nullPadding)));
+                var hasnext = enumerator.MoveNext();
+                if (hasnext) 
+                    next = enumerator.Current.Bump(paddingLength);
+
+                yield return (isfirst, hasnext) switch
+                {
+                    (true, false) => current.AddPadding(padding), // list has only one patch
+                    (true, true) => current.AddPaddingInFront(padding),
+                    (false, true) => current,
+                    (false, false) => current.AddPaddingAtEnd(padding)
+                };
+
+                isfirst = false;
+                if (!hasnext) yield break;
+
+                current = next;
             }
-            else if (nullPadding.Length > patch.Diffs[0].Text.Length)
-            {
-                var firstDiff = patch.Diffs[0];
-                var extraLength = nullPadding.Length - firstDiff.Text.Length;
-                return new Patch(patch.Start1 - extraLength, patch.Length1 + extraLength, patch.Start2 - extraLength, patch.Length2 + extraLength, patch.Diffs.RemoveAt(0).Insert(0, firstDiff.Replace(nullPadding.Substring(firstDiff.Text.Length) + firstDiff.Text)));
-            }
-            return patch;
         }
 
-        private static Patch AddPaddingAfterLastDiff(this Patch patch, string nullPadding)
-        {
-            if (patch.Diffs.Count == 0 || patch.Diffs[^1].Operation != Equal)
-            {
-                var builder = patch.Diffs.ToBuilder();
-                builder.Add(Diff.Equal(nullPadding));
-                return patch with { Length1 = patch.Length1 + nullPadding.Length, Length2 = patch.Length2 + nullPadding.Length, Diffs = builder.ToImmutable() };
-            }
-            else if (nullPadding.Length > patch.Diffs[^1].Text.Length)
-            {
-                var lastDiff = patch.Diffs[^1];
-                var extraLength = nullPadding.Length - lastDiff.Text.Length;
-                var text = lastDiff.Text + nullPadding.Substring(0, extraLength);
-
-                var builder = patch.Diffs.ToBuilder();
-                builder.RemoveAt(builder.Count - 1);
-                builder.Add(lastDiff.Replace(text));
-
-                return patch with { Length1 = patch.Length1 + extraLength, Length2 = patch.Length2 + extraLength, Diffs = builder.ToImmutable() };
-            }
-            return patch;
-        }
 
         /// <summary>
         /// Take a list of patches and return a textual representation.
         /// </summary>
         /// <param name="patches"></param>
         /// <returns></returns>
-        public static string ToText(this List<Patch> patches) => patches.Aggregate(new StringBuilder(), (sb, patch) => sb.Append(patch)).ToString();
+        public static string ToText(this IEnumerable<Patch> patches) => patches.Aggregate(new StringBuilder(), (sb, patch) => sb.Append(patch)).ToString();
 
         static readonly Regex PatchHeader = new Regex("^@@ -(\\d+),?(\\d*) \\+(\\d+),?(\\d*) @@$");
 
@@ -97,7 +78,7 @@ namespace DiffMatchPatch
         /// objects.</summary>
         /// <param name="text"></param>
         /// <returns></returns>
-        public static List<Patch> Parse(string text) => ParseImpl(text).ToList();
+        public static ImmutableList<Patch> Parse(string text) => ParseImpl(text).ToImmutableList();
         static IEnumerable<Patch> ParseImpl(string text)
         {
             if (text.Length == 0)
@@ -150,7 +131,7 @@ namespace DiffMatchPatch
                     length1,
                     start2,
                     length2,
-                    CreateDiffs()
+                    CreateDiffs().ToImmutableList()
                 );
             }
         }
@@ -176,11 +157,11 @@ namespace DiffMatchPatch
         /// <returns>Two element Object array, containing the new text and an array of
         ///  bool values.</returns>
 
-        public static (string newText, bool[] results) Apply(this List<Patch> patches, string text) 
+        public static (string newText, bool[] results) Apply(this IEnumerable<Patch> patches, string text) 
             => Apply(patches, text, MatchSettings.Default, PatchSettings.Default);
 
 
-        public static (string newText, bool[] results) Apply(this List<Patch> patches, string text, MatchSettings matchSettings) 
+        public static (string newText, bool[] results) Apply(this IEnumerable<Patch> patches, string text, MatchSettings matchSettings) 
             => Apply(patches, text, matchSettings, PatchSettings.Default);
 
         /// <summary>
@@ -201,11 +182,10 @@ namespace DiffMatchPatch
             }
 
             // Deep copy the patches so that no changes are made to originals.
-            var patches = input.DeepCopy();
-
-            var nullPadding = patches.AddPadding(settings.PatchMargin);
+            var nullPadding = NullPadding(settings.PatchMargin);
             text = nullPadding + text + nullPadding;
-            patches.SplitMax();
+
+            var patches = input.AddPadding(nullPadding).SplitMax().ToList();
 
             var x = 0;
             // delta keeps track of the offset between the expected and actual
@@ -327,25 +307,22 @@ namespace DiffMatchPatch
         ///  </summary>
         /// <param name="patches"></param>
         /// <param name="patchMargin"></param>
-        internal static void SplitMax(this List<Patch> patches, short patchMargin = 4)
+        internal static IEnumerable<Patch> SplitMax(this IEnumerable<Patch> patches, short patchMargin = 4)
         {
             var patchSize = Constants.MatchMaxBits;
-            for (var x = 0; x < patches.Count; x++)
+            foreach (var patch in patches)
             {
-                if (patches[x].Length1 <= patchSize)
+                if (patch.Length1 <= patchSize)
                 {
+                    yield return patch;
                     continue;
                 }
                 
-                var bigpatch = patches[x];
+                var bigpatch = patch;
                 // Remove the big old patch.
-                patches.Splice(x--, 1);
+                (var start1, _, var start2, _, var diffs) = bigpatch;
 
-                var start1 = bigpatch.Start1;
-                var start2 = bigpatch.Start2;
                 var precontext = string.Empty;
-                var diffs = bigpatch.Diffs;
-
                 while (diffs.Count != 0)
                 {
                     // Create one of several smaller patches.
@@ -433,7 +410,7 @@ namespace DiffMatchPatch
                     }
                     if (!empty)
                     {
-                        patches.Insert(++x, new Patch(s1, l1, s2, l2, thediffs));
+                        yield return new Patch(s1, l1, s2, l2, thediffs.ToImmutableList());
                     }
                 }
             }

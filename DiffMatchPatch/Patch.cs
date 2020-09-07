@@ -9,8 +9,88 @@ namespace DiffMatchPatch
 {
     public record Patch(int Start1, int Length1, int Start2, int Length2, ImmutableList<Diff> Diffs)
     {
-        public Patch(int start1, int length1, int start2, int length2, IEnumerable<Diff> diffs)
-            : this(start1, length1, start2, length2, diffs.ToImmutableList()) { }
+        public Patch Bump(int length) => this with { Start1 = Start1 + length, Start2 = Start2 + length };
+
+        public bool IsEmpty => Diffs.IsEmpty;
+        public bool StartsWith(Operation operation) => Diffs[0].Operation == operation;
+        public bool EndsWith(Operation operation) => Diffs[^1].Operation == operation;
+
+        internal Patch AddPaddingInFront(string padding)
+        {
+            (var s1, var l1, var s2, var l2, ImmutableList<Diff> diffs) = this;
+            var builder = diffs.ToBuilder();
+            (s1, l1, s2, l2) = AddPaddingInFront(builder, s1, l1, s2, l2, padding);
+
+            return new Patch(s1, l1, s2, l2, builder.ToImmutable());
+        }
+
+        internal Patch AddPaddingAtEnd(string padding)
+        {
+            (var s1, var l1, var s2, var l2, ImmutableList<Diff> diffs) = this;
+            var builder = diffs.ToBuilder();
+            (s1, l1, s2, l2) = AddPaddingAtEnd(builder, s1, l1, s2, l2, padding);
+            return new Patch(s1, l1, s2, l2, builder.ToImmutable());
+        }
+
+        internal Patch AddPadding(string padding)
+        {
+            (var s1, var l1, var s2, var l2, ImmutableList<Diff> diffs) = this;
+            var builder = diffs.ToBuilder();
+
+            (s1, l1, s2, l2) = AddPaddingInFront(builder, s1, l1, s2, l2, padding);
+            (s1, l1, s2, l2) = AddPaddingAtEnd(builder, s1, l1, s2, l2, padding);
+
+            return new Patch(s1, l1, s2, l2, builder.ToImmutable());
+        }
+
+        private (int s1, int l1, int s2, int l2) AddPaddingInFront(ImmutableList<Diff>.Builder builder, int s1, int l1, int s2, int l2, string padding)
+        {
+            if (!StartsWith(Equal))
+            {
+                builder.Insert(0, Diff.Equal(padding));
+                return (s1 - padding.Length, l1 + padding.Length, s2 - padding.Length, l2 + padding.Length);
+            }
+            else if (padding.Length > Diffs[0].Text.Length)
+            {
+                var firstDiff = Diffs[0];
+                var extraLength = padding.Length - firstDiff.Text.Length;
+                var text = padding.Substring(firstDiff.Text.Length) + firstDiff.Text;
+
+                builder.RemoveAt(0);
+                builder.Insert(0, firstDiff.Replace(text));
+                return (s1 - extraLength, l1 + extraLength, s2 - extraLength, l2 + extraLength);
+            }
+            else
+            {
+                return (s1, l1, s2, l2);
+            }
+
+        }
+
+        private (int s1, int l1, int s2, int l2) AddPaddingAtEnd(ImmutableList<Diff>.Builder builder, int s1, int l1, int s2, int l2, string padding)
+        {
+            if (!EndsWith(Equal))
+            {
+                builder.Add(Diff.Equal(padding));
+                return (s1, l1 + padding.Length, s2, l2 + padding.Length);
+            }
+            else if (padding.Length > Diffs[^1].Text.Length)
+            {
+                var lastDiff = Diffs[^1];
+                var extraLength = padding.Length - lastDiff.Text.Length;
+                var text = lastDiff.Text + padding.Substring(0, extraLength);
+
+                builder.RemoveAt(builder.Count - 1);
+                builder.Add(lastDiff.Replace(text));
+
+                return (s1, l1 + extraLength, s2, l2 + extraLength);
+            }
+            else
+            {
+                return (s1, l1, s2, l2);
+            }
+
+        }
 
         /// <summary>
         /// Generate GNU diff's format.
@@ -51,63 +131,6 @@ namespace DiffMatchPatch
 
             return text.ToString();
         }
-
-        /// <summary>
-        /// Increase the context until it is unique,
-        /// but don't let the pattern expand beyond Match_MaxBits.</summary>
-        /// <param name="text">Source text</param>
-        /// <param name="patchMargin"></param>
-        internal static (int start1, int length1, int start2, int length2, ImmutableList<Diff>.Builder diffs) AddContext(string text, int start1, int length1, int start2, int length2, ImmutableList<Diff>.Builder input, short patchMargin = 4)
-        {
-            if (text.Length == 0)
-            {
-                return (start1, length1, start2, length2, input);
-            }
-            
-            var diffs = input;
-
-            var pattern = text.Substring(start2, length1);
-            var padding = 0;
-
-            // Look for the first and last matches of pattern in text.  If two
-            // different matches are found, increase the pattern length.
-            while (text.IndexOf(pattern, StringComparison.Ordinal)
-                   != text.LastIndexOf(pattern, StringComparison.Ordinal)
-                   && pattern.Length < Constants.MatchMaxBits - patchMargin - patchMargin)
-            {
-                padding += patchMargin;
-                var begin = Math.Max(0, start2 - padding);
-                pattern = text[begin..Math.Min(text.Length, start2 + length1 + padding)];
-            }
-            // Add one chunk for good luck.
-            padding += patchMargin;
-
-            // Add the prefix.
-            var begin1 = Math.Max(0, start2 - padding);
-            var prefix = text.Substring(begin1, start2 - begin1);
-            if (prefix.Length != 0)
-            {
-                diffs.Insert(0, Diff.Equal(prefix));
-            }
-            // Add the suffix.
-            var begin2 = start2 + length1;
-            var length = Math.Min(text.Length, start2 + length1 + padding) - begin2;
-            var suffix = text.Substring(begin2, length);
-            if (suffix.Length != 0)
-            {
-                diffs.Add(Diff.Equal(suffix));
-            }
-
-            // Roll back the start points.
-            start1 -= prefix.Length;
-            start2 -= prefix.Length;
-            // Extend the lengths.
-            length1 = length1 + prefix.Length + suffix.Length;
-            length2 = length2 + prefix.Length + suffix.Length;
-            
-            return (start1, length1, start2, length2, diffs);
-        }
-
         /// <summary>
         /// Compute a list of patches to turn text1 into text2.
         /// A set of Diffs will be computed.
@@ -201,7 +224,7 @@ namespace DiffMatchPatch
                             // Time for a new patch.
                             if (newdiffs.Any())
                             {
-                                (start1, length1, start2, length2, newdiffs) = AddContext(prepatchText, start1, length1, start2, length2, newdiffs);
+                                (start1, length1, start2, length2) = newdiffs.AddContext(prepatchText, start1, length1, start2, length2);
                                 yield return new Patch(start1, length1, start2, length2, newdiffs.ToImmutable());
                                 start1 = start2 = length1 = length2 = 0;
                                 newdiffs.Clear();
@@ -229,8 +252,8 @@ namespace DiffMatchPatch
             // Pick up the leftover patch if not empty.
             if (newdiffs.Any())
             {
-                (start1, length1, start2, length2, newdiffs) = AddContext(prepatchText, start1, length1, start2, length2, newdiffs);
-                yield return new Patch(start1, length1, start2, length2, newdiffs);
+                (start1, length1, start2, length2) = newdiffs.AddContext(prepatchText, start1, length1, start2, length2);
+                yield return new Patch(start1, length1, start2, length2, newdiffs.ToImmutable());
             }
         }
 
