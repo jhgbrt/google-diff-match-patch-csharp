@@ -14,7 +14,7 @@ namespace DiffMatchPatch
         /// <param name="maxLines"></param>
         /// <returns></returns>
         public string Compress(ReadOnlySpan<char> text, int maxLines = char.MaxValue) 
-            => Encode(text.ToString(), maxLines);
+            => Encode(text, maxLines);
 
         string Encode(ReadOnlySpan<char> text, int maxLines)
         {
