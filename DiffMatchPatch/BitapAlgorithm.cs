@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace DiffMatchPatch
 {
@@ -42,7 +41,8 @@ namespace DiffMatchPatch
             var bestLoc = text.IndexOf(pattern, loc, StringComparison.Ordinal);
             if (bestLoc != -1)
             {
-                scoreThreshold = Math.Min(MatchBitapScore(0, bestLoc, loc, pattern), scoreThreshold);
+                scoreThreshold = Math.Min(MatchBitapScore(0, bestLoc, loc,
+                    pattern), scoreThreshold);
                 // What about in the other direction? (speedup)
                 bestLoc = text.LastIndexOf(pattern,
                     Math.Min(loc + pattern.Length, text.Length),
@@ -70,7 +70,8 @@ namespace DiffMatchPatch
                 binMid = binMax;
                 while (binMin < binMid)
                 {
-                    if (MatchBitapScore(d, loc + binMid, loc, pattern) <= scoreThreshold)
+                    if (MatchBitapScore(d, loc + binMid, loc, pattern)
+                        <= scoreThreshold)
                     {
                         binMin = binMid;
                     }
@@ -78,8 +79,8 @@ namespace DiffMatchPatch
                     {
                         binMax = binMid;
                     }
+                    binMid = (binMax - binMin) / 2 + binMin;
                 }
-                binMid = (binMax - binMin) / 2 + binMin;
                 // Use the result from this iteration as the maximum for the next.
                 binMax = binMid;
                 var start = Math.Max(1, loc - binMid + 1);
@@ -150,14 +151,16 @@ namespace DiffMatchPatch
         public static Dictionary<char, int> InitAlphabet(string pattern)
         {
             var s = new Dictionary<char, int>();
-            foreach ((var c, var i) in pattern.Select((c,i) => (c,i)))
+            var charPattern = pattern.ToCharArray();
+            var i = 0;
+            foreach (var c in charPattern)
             {
                 if (!s.ContainsKey(c))
                     s.Add(c, 0);
                 var value = s[c] | (1 << (pattern.Length - i - 1));
                 s[c] = value;
+                i++;
             }
-
             return s;
         }
 
@@ -175,6 +178,7 @@ namespace DiffMatchPatch
             var proximity = Math.Abs(loc - x);
             if (_matchDistance == 0)
             {
+                // Dodge divide by zero error.
                 return proximity == 0 ? accuracy : 1.0;
             }
             return accuracy + proximity / (float)_matchDistance;
