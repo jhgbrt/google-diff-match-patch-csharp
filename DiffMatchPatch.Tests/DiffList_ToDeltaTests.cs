@@ -35,6 +35,13 @@ namespace DiffMatchPatch.Tests
             var delta = diffs.ToDelta();
             Assert.Equal("=4\t-1\t+ed\t=6\t-3\t+a\t=5\t+old dog", delta);
         }
+        [Fact]
+        public void FromDelta_EmptyTokensAreOk()
+        {
+            var delta = "\t\t";
+            var diffs = DiffList.FromDelta("", delta);
+            Assert.Empty(diffs);
+        }
 
         [Fact]
         public void FromDelta_GeneratesExpectedDiffs()
@@ -44,21 +51,29 @@ namespace DiffMatchPatch.Tests
             Assert.Equal(diffs, result.ToList());
             
         }
-
         [Fact]
-        public void ToDelta_InputTooLong_Throws()
+        public void FromDelta_InputTooLong_Throws()
         {
             var delta = diffs.ToDelta();
             var text1 = diffs.Text1() + "x";
-            Assert.Throws<ArgumentException>(() => 
+            Assert.Throws<ArgumentException>(() =>
                 DiffList.FromDelta(text1, delta).ToList()
+            );
+        }
+
+        [Fact]
+        public void FromDelta_InvalidInput_Throws()
+        {
+            var delta = "=x";
+            Assert.Throws<ArgumentException>(() => 
+                DiffList.FromDelta("", delta).ToList()
             );
         }
         [Fact]
         public void ToDelta_InputTooShort_Throws()
         {
             var delta = diffs.ToDelta();
-            var text1 = diffs.Text1().Substring(1);
+            var text1 = diffs.Text1()[1..];
             Assert.Throws<ArgumentException>(() =>
                 DiffList.FromDelta(text1, delta).ToList()
             );

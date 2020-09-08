@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+
 using Xunit;
 
 namespace DiffMatchPatch.Tests
@@ -11,8 +13,7 @@ namespace DiffMatchPatch.Tests
         {
             // Cleanup a messy diff.
             // Null case.
-            var result = new List<Diff>();
-            result.CleanupMerge();
+            var result = new List<Diff>().CleanupMerge().ToList();
             var expected = new List<Diff>();
             
             Assert.Equal(expected, result);
@@ -21,8 +22,7 @@ namespace DiffMatchPatch.Tests
         [Fact]
         public void CleanupMerge_AlreadyCleaned_ReturnsSameList()
         {
-            var result = new List<Diff> { Diff.Equal("a"), Diff.Delete("b"), Diff.Insert("c") };
-            result.CleanupMerge();
+            var result = new List<Diff> { Diff.Equal("a"), Diff.Delete("b"), Diff.Insert("c") }.CleanupMerge().ToList();
             
             var expected = new[] {Diff.Equal("a"), Diff.Delete("b"), Diff.Insert("c")};
 
@@ -32,24 +32,21 @@ namespace DiffMatchPatch.Tests
         [Fact]
         public void SubsequentEqualitiesAreMerged()
         {
-            var diffs = new List<Diff> { Diff.Equal("a"), Diff.Equal("b"), Diff.Equal("c") };
-            diffs.CleanupMerge();
+            var diffs = new List<Diff> { Diff.Equal("a"), Diff.Equal("b"), Diff.Equal("c") }.CleanupMerge().ToList();
             Assert.Equal(new List<Diff> { Diff.Equal("abc") }, diffs);
         }
 
         [Fact]
         public void SubsequentDeletesAreMerged()
         {
-            var diffs = new List<Diff> { Diff.Delete("a"), Diff.Delete("b"), Diff.Delete("c") };
-            diffs.CleanupMerge();
+            var diffs = new List<Diff> { Diff.Delete("a"), Diff.Delete("b"), Diff.Delete("c") }.CleanupMerge().ToList();
             Assert.Equal(new List<Diff> { Diff.Delete("abc") }, diffs);
         }
 
         [Fact]
         public void SubsequentInsertsAreMerged()
         {
-            var diffs = new List<Diff> { Diff.Insert("a"), Diff.Insert("b"), Diff.Insert("c") };
-            diffs.CleanupMerge();
+            var diffs = new List<Diff> { Diff.Insert("a"), Diff.Insert("b"), Diff.Insert("c") }.CleanupMerge().ToList();
             Assert.Equal(new List<Diff> { Diff.Insert("abc") }, diffs);
         }
 
@@ -66,8 +63,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("d"),
                 Diff.Equal("e"),
                 Diff.Equal("f")
-            };
-            diffs.CleanupMerge();
+            }.CleanupMerge().ToList();
             Assert.Equal(new List<Diff> { Diff.Delete("ac"), Diff.Insert("bd"), Diff.Equal("ef") }, diffs);
         }
 
@@ -77,8 +73,7 @@ namespace DiffMatchPatch.Tests
         {
 
             // Prefix and suffix detection.
-            var diffs = new List<Diff> { Diff.Delete("a"), Diff.Insert("abc"), Diff.Delete("dc") };
-            diffs.CleanupMerge();
+            var diffs = new List<Diff> { Diff.Delete("a"), Diff.Insert("abc"), Diff.Delete("dc") }.CleanupMerge().ToList();
             Assert.Equal(
                 new List<Diff> { Diff.Equal("a"), Diff.Delete("d"), Diff.Insert("b"), Diff.Equal("c") }, diffs);
         }
@@ -94,8 +89,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("abc"),
                 Diff.Delete("dc"),
                 Diff.Equal("y")
-            };
-            diffs.CleanupMerge();
+            }.CleanupMerge().ToList();
             Assert.Equal(
                 new List<Diff> { Diff.Equal("xa"), Diff.Delete("d"), Diff.Insert("b"), Diff.Equal("cy") }, diffs);
         }
@@ -105,8 +99,7 @@ namespace DiffMatchPatch.Tests
         public void SlideEditLeft()
         {
             // Slide edit left.
-            var diffs = new List<Diff> { Diff.Equal("a"), Diff.Insert("ba"), Diff.Equal("c") };
-            diffs.CleanupMerge();
+            var diffs = new List<Diff> { Diff.Equal("a"), Diff.Insert("ba"), Diff.Equal("c") }.CleanupMerge().ToList();
             Assert.Equal(new List<Diff> { Diff.Insert("ab"), Diff.Equal("ac") }, diffs);
         }
 
@@ -116,8 +109,7 @@ namespace DiffMatchPatch.Tests
         {
  
             // Slide edit right.
-            var diffs = new List<Diff> { Diff.Equal("c"), Diff.Insert("ab"), Diff.Equal("a") };
-            diffs.CleanupMerge();
+            var diffs = new List<Diff> { Diff.Equal("c"), Diff.Insert("ab"), Diff.Equal("a") }.CleanupMerge().ToList();
             Assert.Equal(new List<Diff> { Diff.Equal("ca"), Diff.Insert("ba") }, diffs);
 
         }
@@ -134,8 +126,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("c"),
                 Diff.Delete("ac"),
                 Diff.Equal("x")
-            };
-            diffs.CleanupMerge();
+            }.CleanupMerge().ToList();
             Assert.Equal(new List<Diff> { Diff.Delete("abc"), Diff.Equal("acx") }, diffs);
 
         }
@@ -152,8 +143,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("c"),
                 Diff.Delete("b"),
                 Diff.Equal("a")
-            };
-            diffs.CleanupMerge();
+            }.CleanupMerge().ToList();
             Assert.Equal(new List<Diff> { Diff.Equal("xca"), Diff.Delete("cba") }, diffs);
         }
 
@@ -165,8 +155,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Delete("b"),
                 Diff.Insert("ab"),
                 Diff.Equal("c")
-            };
-            diffs.CleanupMerge();
+            }.CleanupMerge().ToList();
             Assert.Equal(new List<Diff> { Diff.Insert("a"), Diff.Equal("bc") }, diffs);
         }
 
@@ -178,12 +167,32 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal(""),
                 Diff.Insert("a"),
                 Diff.Equal("b")
-            };
-            diffs.CleanupMerge();
+            }.CleanupMerge().ToList();
             Assert.Equal(new List<Diff> { Diff.Insert("a"), Diff.Equal("b") }, diffs);
 
         }
 
+        [Fact]
+        public void FourEditElimination()
+        {
+            var diffs = new List<Diff>
+            {
+                Diff.Delete("ab"),
+                Diff.Insert("12"),
+                Diff.Equal("xyz"),
+                Diff.Delete("cd"),
+                Diff.Insert("34")
+            }.CleanupMerge().ToList();
+            Assert.Equal(new List<Diff>
+            {
+                Diff.Delete("ab"),
+                Diff.Insert("12"),
+                Diff.Equal("xyz"),
+                Diff.Delete("cd"),
+                Diff.Insert("34")
+            }, diffs);
+        }
 
     }
+    
 }

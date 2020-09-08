@@ -9,8 +9,7 @@ namespace DiffMatchPatch.Tests
         [Fact]
         public void EmptyList()
         {
-            var diffs = new List<Diff>();
-            diffs.CleanupSemantic();
+            var diffs = new List<Diff>().CleanupSemantic();
             Assert.Equal(new List<Diff>(), diffs);
         }
 
@@ -23,8 +22,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("cd"),
                 Diff.Equal("12"),
                 Diff.Delete("e")
-            };
-            diffs.CleanupSemantic();
+            }.CleanupSemantic();
             Assert.Equal(new List<Diff>
             {
                 Diff.Delete("ab"),
@@ -43,8 +41,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Insert("ABC"),
                 Diff.Equal("1234"),
                 Diff.Delete("wxyz")
-            };
-            diffs.CleanupSemantic();
+            }.CleanupSemantic();
             Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abc"),
@@ -62,8 +59,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Delete("a"),
                 Diff.Equal("b"),
                 Diff.Delete("c")
-            };
-            diffs.CleanupSemantic();
+            }.CleanupSemantic();
             Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abc"),
@@ -83,8 +79,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Delete("e"),
                 Diff.Equal("f"),
                 Diff.Insert("g")
-            };
-            diffs.CleanupSemantic();
+            }.CleanupSemantic();
             Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abcdef"),
@@ -107,8 +102,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("A"),
                 Diff.Delete("B"),
                 Diff.Insert("2")
-            };
-            diffs.CleanupSemantic();
+            }.CleanupSemantic();
             Assert.Equal(new List<Diff>
             {
                 Diff.Delete("AB_AB"),

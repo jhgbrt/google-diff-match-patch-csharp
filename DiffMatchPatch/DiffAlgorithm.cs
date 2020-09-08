@@ -61,7 +61,7 @@ namespace DiffMatchPatch
                 diffs.Add(Diff.Equal(commonsuffix));
             }
 
-            diffs.CleanupMerge();
+            diffs = diffs.CleanupMerge().ToList();
             return diffs;
         }
 

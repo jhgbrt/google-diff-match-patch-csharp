@@ -67,7 +67,7 @@ namespace DiffMatchPatch
             Insert => sb.AppendHtml("ins", "#e6ffe6", text),
             Delete => sb.AppendHtml("del", "#ffe6e6", text),
             Equal => sb.AppendHtml("span", "", text),
-            _ => throw new ArgumentException()
+            _ => throw new IndexOutOfRangeException()
         };
 
         /// <summary>
@@ -158,7 +158,7 @@ namespace DiffMatchPatch
                     {
                         throw new ArgumentException($"Invalid number in Diff.FromDelta: {param}");
                     }
-                    if (pointer < 0 || n < 0 || pointer > text1.Length - n)
+                    if (pointer > text1.Length - n)
                     {
                         throw new ArgumentException($"Delta length ({pointer}) larger than source text length ({text1.Length}).");
                     }
@@ -179,24 +179,18 @@ namespace DiffMatchPatch
             }
         }
 
-        /// <summary>
-        /// Reorder and merge like edit sections.  Merge equalities.
-        /// Any edit section can move as long as it doesn't cross an equality.
-        /// </summary>
-        /// <param name="diffs">list of Diffs</param>
-        internal static IEnumerable<Diff> CleanupMerge(this List<Diff> diffs)
+        internal static IEnumerable<Diff> CleanupMergePass1(this IEnumerable<Diff> diffs)
         {
-            // Add a dummy entry at the beginning & end.
-            diffs.Insert(0, Diff.Empty);
-            diffs.Add(Diff.Empty);
-            var nofdiffs = 0;
+
             var sbDelete = new StringBuilder();
             var sbInsert = new StringBuilder();
-            var pointer = 1;
-            var lastEquality = 0;
-            while (pointer < diffs.Count)
+
+            Diff lastEquality = Diff.Empty;
+
+            var enumerator = diffs.Concat(Diff.Empty).GetEnumerator();
+            while (enumerator.MoveNext())
             {
-                var diff = diffs[pointer];
+                var diff = enumerator.Current;
 
                 (sbInsert, sbDelete) = diff.Operation switch
                 {
@@ -207,11 +201,6 @@ namespace DiffMatchPatch
 
                 switch (diff.Operation)
                 {
-                    case Insert:
-                    case Delete:
-                        nofdiffs++;
-                        pointer++;
-                        break;
                     case Equal:
                         // Upon reaching an equality, check for prior redundancies.
                         if (sbInsert.Length > 0 || sbDelete.Length > 0)
@@ -224,9 +213,8 @@ namespace DiffMatchPatch
                                 var commonprefix = sbInsert.ToString(0, prefixLength);
                                 sbInsert.Remove(0, prefixLength);
                                 sbDelete.Remove(0, prefixLength);
-                                diffs[lastEquality] = diffs[lastEquality].Append(commonprefix);
+                                lastEquality = lastEquality.Append(commonprefix);
                             }
-
 
                             // Factor out any common suffixies.
                             var suffixLength = TextUtil.CommonSuffix(sbInsert, sbDelete);
@@ -235,51 +223,38 @@ namespace DiffMatchPatch
                                 var commonsuffix = sbInsert.ToString(sbInsert.Length - suffixLength, suffixLength);
                                 sbInsert.Remove(sbInsert.Length - suffixLength, suffixLength);
                                 sbDelete.Remove(sbDelete.Length - suffixLength, suffixLength);
-                                diffs[pointer] = diffs[pointer].Prepend(commonsuffix);
+                                diff = diff.Prepend(commonsuffix);
                             }
 
                             // Delete the offending records and add the merged ones.
-                            IEnumerable<Diff> Replacements()
+                            if (!lastEquality.IsEmpty)
                             {
-                                if (sbDelete.Length > 0) yield return Diff.Delete(sbDelete.ToString());
-                                if (sbInsert.Length > 0) yield return Diff.Insert(sbInsert.ToString());
+                                yield return lastEquality;
                             }
-
-                            var replacements = Replacements().ToList();
-                            diffs.Splice(pointer - nofdiffs, nofdiffs, replacements);
-
-                            pointer = pointer - nofdiffs + replacements.Count + 1;
-                        }
-                        else if (pointer > 0 && lastEquality == pointer - 1)
-                        {
-                            // Merge this equality with the previous one.
-                            diffs[lastEquality] = diffs[lastEquality].Append(diffs[pointer].Text);
-                            diffs.RemoveAt(pointer);
+                            if (sbDelete.Length > 0) yield return Diff.Delete(sbDelete.ToString());
+                            if (sbInsert.Length > 0) yield return Diff.Insert(sbInsert.ToString());
+                            lastEquality = diff;
+                            sbDelete.Clear();
+                            sbInsert.Clear();
                         }
                         else
                         {
-                            pointer++;
+                            // Merge this equality with the previous one.
+                            lastEquality = lastEquality.Append(diff.Text);
                         }
-                        nofdiffs = 0;
-                        sbDelete.Clear();
-                        sbInsert.Clear();
-                        lastEquality = pointer - 1;
                         break;
                 }
             }
-            if (diffs[0].IsEmpty && diffs.Count > 1)
-            {
-                diffs.RemoveAt(0);
-            }
-            if (diffs[^1].IsEmpty)
-            {
-                diffs.RemoveAt(diffs.Count - 1);  // Remove the dummy entry at the end.
-            }
+            if (!lastEquality.IsEmpty)
+                yield return lastEquality;
+        }
 
+        internal static IEnumerable<Diff> CleanupMergePass2(this IEnumerable<Diff> input, Action haschanges)
+        {
             // Second pass: look for single edits surrounded on both sides by
             // equalities which can be shifted sideways to eliminate an equality.
             // e.g: A<ins>BA</ins>C -> <ins>AB</ins>AC
-            var changes = false;
+            var diffs = input.ToList();
             // Intentionally ignore the first and last element (don't need checking).
             for (var i = 1; i < diffs.Count - 1; i++)
             {
@@ -296,7 +271,7 @@ namespace DiffMatchPatch
                         diffs[i] = current.Replace(text);
                         diffs[i + 1] = next.Replace(previous.Text + next.Text);
                         diffs.Splice(i - 1, 1);
-                        changes = true;
+                        haschanges();
                     }
                     else if (current.Text.StartsWith(next.Text, StringComparison.Ordinal))
                     {
@@ -304,22 +279,90 @@ namespace DiffMatchPatch
                         diffs[i - 1] = previous.Replace(previous.Text + next.Text);
                         diffs[i] = current.Replace(current.Text[next.Text.Length..] + next.Text);
                         diffs.Splice(i + 1, 1);
-                        changes = true;
+                        haschanges();
                     }
                 }
             }
-            // If shifts were made, the diff needs reordering and another shift sweep.
-            if (changes)
-            {
-                diffs.CleanupMerge();
-            }
             return diffs;
         }
+
+        /// <summary>
+        /// Reorder and merge like edit sections.  Merge equalities.
+        /// Any edit section can move as long as it doesn't cross an equality.
+        /// </summary>
+        /// <param name="diffs">list of Diffs</param>
+        internal static IEnumerable<Diff> CleanupMerge(this IEnumerable<Diff> diffs)
+        {
+            bool changes = true;
+
+            while (changes)
+            {
+                changes = false;
+                diffs = diffs
+                    .CleanupMergePass1()
+                    .CleanupMergePass2(() => changes = true)
+                    .ToList(); // required to detect if anything changed
+            }
+
+            return diffs;
+        }
+
 
         record EditBetweenEqualities(string Equality1, string Edit, string Equality2)
         {
             public int Score => DiffCleanupSemanticScore(Equality1, Edit) + DiffCleanupSemanticScore(Edit, Equality2);
 
+            record ScoreHelper(string Str, Index I, Regex Regex)
+            {
+                char C => Str[I];
+                public bool NonAlphaNumeric => !char.IsLetterOrDigit(C);
+                public bool IsWhitespace => char.IsWhiteSpace(C);
+                public bool IsLineBreak => C == '\n' || C == '\r';
+                public bool IsBlankLine => IsLineBreak && Regex.IsMatch(Str);
+            }
+
+            /// Given two strings, computes a score representing whether the internal boundary falls on logical boundaries.
+            /// higher is better
+            private static int DiffCleanupSemanticScore(string one, string two)
+            {
+                if (one.Length == 0 || two.Length == 0)
+                {
+                    // Edges are the best.
+                    return 6;
+                }
+
+                var h1 = new ScoreHelper(one, ^1, BlankLineEnd);
+                var h2 = new ScoreHelper(two, 0, BlankLineStart);
+
+
+                if (h1.IsBlankLine || h2.IsBlankLine)
+                {
+                    // Five points for blank lines.
+                    return 5;
+                }
+                if (h1.IsLineBreak || h2.IsLineBreak)
+                {
+                    // Four points for line breaks.
+                    return 4;
+                }
+                if (h1.NonAlphaNumeric && !h1.IsWhitespace && h2.IsWhitespace)
+                {
+                    // Three points for end of sentences.
+                    return 3;
+                }
+                if (h1.IsWhitespace || h2.IsWhitespace)
+                {
+                    // Two points for whitespace.
+                    return 2;
+                }
+                if (h1.NonAlphaNumeric || h2.NonAlphaNumeric)
+                {
+                    // One point for non-alphanumeric.
+                    return 1;
+                }
+                return 0;
+            }
+            
             // Shift the edit as far left as possible.
             public EditBetweenEqualities ShiftLeft()
             {
@@ -328,7 +371,10 @@ namespace DiffMatchPatch
                 if (commonOffset > 0)
                 {
                     var commonString = Edit[^commonOffset..];
-                    return this with { Equality1 = Equality1.Substring(0, Equality1.Length - commonOffset), Edit = commonString + Edit.Substring(0, Edit.Length - commonOffset), Equality2 = commonString + Equality2 };
+                    var equality1 = Equality1.Substring(0, Equality1.Length - commonOffset);
+                    var edit = commonString + Edit.Substring(0, Edit.Length - commonOffset);
+                    var equality2 = commonString + Equality2;
+                    return this with { Equality1 = equality1, Edit = edit, Equality2 = equality2 };
                 }
                 else
                 {
@@ -425,68 +471,6 @@ namespace DiffMatchPatch
             }
         }
 
-        /// <summary>
-        /// Given two strings, compute a score representing whether the internal
-        /// boundary falls on logical boundaries.
-        /// Scores range from 6 (best) to 0 (worst).
-        ///  </summary>
-        /// <param name="one"></param>
-        /// <param name="two"></param>
-        /// <returns>score</returns>
-        private static int DiffCleanupSemanticScore(string one, string two)
-        {
-            if (one.Length == 0 || two.Length == 0)
-            {
-                // Edges are the best.
-                return 6;
-            }
-
-            // Each port of this function behaves slightly differently due to
-            // subtle differences in each language's definition of things like
-            // 'whitespace'.  Since this function's purpose is largely cosmetic,
-            // the choice has been made to use each language's native features
-            // rather than force total conformity.
-
-            Index i = ^1;
-            var char1 = one[^1];
-            var char2 = two[0];
-            var nonAlphaNumeric1 = !char.IsLetterOrDigit(char1);
-            var nonAlphaNumeric2 = !char.IsLetterOrDigit(char2);
-            var whitespace1 = char.IsWhiteSpace(char1);
-            var whitespace2 = char.IsWhiteSpace(char2);
-            var lineBreak1 = char1 == '\n' || char1 == '\r';
-            var lineBreak2 = char1 == '\n' || char1 == '\r';
-            var blankLine1 = lineBreak1 && BlankLineEnd.IsMatch(one);
-            var blankLine2 = lineBreak2 && BlankLineStart.IsMatch(two);
-
-            if (blankLine1 || blankLine2)
-            {
-                // Five points for blank lines.
-                return 5;
-            }
-            if (lineBreak1 || lineBreak2)
-            {
-                // Four points for line breaks.
-                return 4;
-            }
-            if (nonAlphaNumeric1 && !whitespace1 && whitespace2)
-            {
-                // Three points for end of sentences.
-                return 3;
-            }
-            if (whitespace1 || whitespace2)
-            {
-                // Two points for whitespace.
-                return 2;
-            }
-            if (nonAlphaNumeric1 || nonAlphaNumeric2)
-            {
-                // One point for non-alphanumeric.
-                return 1;
-            }
-            return 0;
-        }
-
         // Define some regex patterns for matching boundaries.
         private static readonly Regex BlankLineEnd = new Regex("\\n\\r?\\n\\Z", RegexOptions.Compiled);
         private static readonly Regex BlankLineStart = new Regex("\\A\\r?\\n\\r?\\n", RegexOptions.Compiled);
@@ -581,7 +565,7 @@ namespace DiffMatchPatch
 
             if (changes)
             {
-                diffs.CleanupMerge();
+                diffs = diffs.CleanupMerge().ToList();
             }
 
             return diffs;

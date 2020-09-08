@@ -46,8 +46,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("xyz"),
                 Diff.Delete("cd"),
                 Diff.Insert("34")
-            };
-            diffs.CleanupEfficiency();
+            }.CleanupEfficiency();
             Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abxyzcd"),
@@ -64,8 +63,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("x"),
                 Diff.Delete("cd"),
                 Diff.Insert("34")
-            };
-            diffs.CleanupEfficiency();
+            }.CleanupEfficiency();
             Assert.Equal(new List<Diff>
             {
                 Diff.Delete("xcd"),
@@ -85,8 +83,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("z"),
                 Diff.Delete("cd"),
                 Diff.Insert("56")
-            };
-            diffs.CleanupEfficiency();
+            }.CleanupEfficiency();
             Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abxyzcd"),
@@ -106,8 +103,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("wxyz"),
                 Diff.Delete("cd"),
                 Diff.Insert("34")
-            };
-            diffs.CleanupEfficiency(highDiffEditCost);
+            }.CleanupEfficiency(highDiffEditCost);
             Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abwxyzcd"),
