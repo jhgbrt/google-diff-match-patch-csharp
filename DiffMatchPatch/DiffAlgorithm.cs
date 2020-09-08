@@ -142,24 +142,24 @@ namespace DiffMatchPatch
             if (optimizeForSpeed)
             {
                 // Check to see if the problem can be split in two.
-                var result = TextUtil.HalfMatch(text1, text2);
-                if (!result.IsEmpty)
+                var halfMatch = TextUtil.HalfMatch(text1, text2);
+                if (!halfMatch.IsEmpty)
                 {
                     // A half-match was found, sort out the return data.
                     // Send both pairs off for separate processing.
-                    var diffsA = Compute(result.Prefix1, result.Prefix2, checklines, token, optimizeForSpeed);
-                    var diffsB = Compute(result.Suffix1, result.Suffix2, checklines, token, optimizeForSpeed);
+                    var diffsA = Compute(halfMatch.Prefix1, halfMatch.Prefix2, checklines, token, optimizeForSpeed);
+                    var diffsB = Compute(halfMatch.Suffix1, halfMatch.Suffix2, checklines, token, optimizeForSpeed);
 
                     // Merge the results.
                     return  diffsA
-                        .Concat(Diff.Equal(result.CommonMiddle))
+                        .Concat(Diff.Equal(halfMatch.CommonMiddle))
                         .Concat(diffsB)
                         .ToList();
                 }
             }
             if (checklines && text1.Length > 100 && text2.Length > 100)
             {
-                return LineDiff(text1, text2, token, optimizeForSpeed);
+                return LineDiff(text1, text2, token, optimizeForSpeed).ToList();
             }
 
             return MyersDiffBisect(text1, text2, token, optimizeForSpeed);
@@ -174,7 +174,7 @@ namespace DiffMatchPatch
         /// <param name="token"></param>
         /// <param name="optimizeForSpeed"></param>
         /// <returns></returns>
-        private static List<Diff> LineDiff(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, CancellationToken token, bool optimizeForSpeed)
+        private static IEnumerable<Diff> LineDiff(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, CancellationToken token, bool optimizeForSpeed)
         {
             // Scan the text on a line-by-line basis first.
             var compressor = new LineToCharCompressor();
