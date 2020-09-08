@@ -185,48 +185,47 @@ namespace DiffMatchPatch
                 .ToList()
                 .CleanupSemantic(); // Eliminate freak matches (e.g. blank lines)
 
-            // Rediff any replacement blocks, this time character-by-character.
-            // Add a dummy entry at the end.
-            diffs.Add(Diff.Equal(string.Empty));
-            var pointer = 0;
-            var countDelete = 0;
-            var countInsert = 0;
-            var insertBuilder = new StringBuilder();
-            var deleteBuilder = new StringBuilder();
-            while (pointer < diffs.Count)
-            {
-                switch (diffs[pointer].Operation)
-                {
-                    case Insert:
-                        countInsert++;
-                        insertBuilder.Append(diffs[pointer].Text);
-                        break;
-                    case Delete:
-                        countDelete++;
-                        deleteBuilder.Append(diffs[pointer].Text);
-                        break;
-                    case Equal:
-                        // Upon reaching an equality, check for prior redundancies.
-                        if (countDelete >= 1 && countInsert >= 1)
-                        {
-                            // Delete the offending records and add the merged ones.
-                            var diffsWithinLine = Compute(deleteBuilder.ToString(), insertBuilder.ToString(), false, token, optimizeForSpeed);
-                            var count = countDelete + countInsert;
-                            var index = pointer - count;
-                            diffs.Splice(index, count, diffsWithinLine);
-                            pointer = index + diffsWithinLine.Count;
-                        }
-                        countInsert = 0;
-                        countDelete = 0;
-                        deleteBuilder.Clear();
-                        insertBuilder.Clear();
-                        break;
-                }
-                pointer++;
-            }
-            diffs.RemoveAt(diffs.Count - 1);  // Remove the dummy entry at the end.
+            return RediffAfterLineDiff(diffs, token, optimizeForSpeed).ToList();
+        }
 
-            return diffs;
+        // Rediff any replacement blocks, this time character-by-character.
+        private static IEnumerable<Diff> RediffAfterLineDiff(List<Diff> diffs, CancellationToken token, bool optimizeForSpeed)
+        {
+            var ins = new StringBuilder();
+            var del = new StringBuilder();
+            foreach (var diff in diffs.Concat(Diff.Empty))
+            {
+                (ins, del) = diff.Operation switch
+                {
+                    Insert => (ins.Append(diff.Text), del),
+                    Delete => (ins, del.Append(diff.Text)),
+                    _ => (ins, del)
+                };
+
+                if (diff.Operation != Equal)
+                {
+                    continue;
+                }
+                
+                var consolidatedDiffsBeforeEqual = diff.Operation switch
+                {
+                    Equal when ins.Length > 0 && del.Length > 0 => Compute(del.ToString(), ins.ToString(), false, token, optimizeForSpeed),
+                    Equal when del.Length > 0 => Diff.Delete(del.ToString()).ItemAsEnumerable(),
+                    Equal when ins.Length > 0 => Diff.Insert(ins.ToString()).ItemAsEnumerable(),
+                    _ => Enumerable.Empty<Diff>()
+                };
+
+                foreach (var d in consolidatedDiffsBeforeEqual)
+                {
+                    yield return d;
+                }
+
+                if (!diff.IsEmpty)
+                    yield return diff;
+
+                ins.Clear();
+                del.Clear();
+            }
         }
 
         /// <summary>

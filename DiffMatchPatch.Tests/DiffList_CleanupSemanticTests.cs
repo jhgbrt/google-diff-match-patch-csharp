@@ -124,8 +124,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("The c"),
                 Diff.Delete("ow and the c"),
                 Diff.Equal("at.")
-            };
-            diffs.CleanupSemantic();
+            }.CleanupSemantic();
             Assert.Equal(new List<Diff>
             {
                 Diff.Equal("The "),
@@ -141,8 +140,7 @@ namespace DiffMatchPatch.Tests
             {
                 Diff.Delete("abcxx"),
                 Diff.Insert("xxdef")
-            };
-            diffs.CleanupSemantic();
+            }.CleanupSemantic();
             Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abcxx"),
@@ -157,8 +155,7 @@ namespace DiffMatchPatch.Tests
             {
                 Diff.Delete("abcxxx"),
                 Diff.Insert("xxxdef")
-            };
-            diffs.CleanupSemantic();
+            }.CleanupSemantic();
             Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abc"),
@@ -174,8 +171,7 @@ namespace DiffMatchPatch.Tests
             {
                 Diff.Delete("xxxabc"),
                 Diff.Insert("defxxx")
-            };
-            diffs.CleanupSemantic();
+            }.CleanupSemantic();
             Assert.Equal(new List<Diff>
             {
                 Diff.Insert("def"),
@@ -194,8 +190,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("----"),
                 Diff.Delete("A3"),
                 Diff.Insert("3BC")
-            };
-            diffs.CleanupSemantic();
+            }.CleanupSemantic();
             Assert.Equal(new List<Diff>
             {
                 Diff.Delete("abcd"),

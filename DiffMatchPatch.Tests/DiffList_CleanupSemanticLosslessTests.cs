@@ -12,10 +12,76 @@ namespace DiffMatchPatch.Tests
         {
             // Slide Diffs to match logical boundaries.
             // Null case.
-            var diffs = new List<Diff>();
-            diffs.CleanupSemanticLossless();
+            var diffs = new List<Diff>().CleanupSemanticLossless().ToList();
             Assert.Equal(new List<Diff>(), diffs);
         }
+
+        [Fact]
+        public void SingleDiff_WhenCleaned_Remains()
+        {
+            // Blank lines.
+            var diffs = new List<Diff>
+            {
+                Diff.Equal("AAA"),
+            }.CleanupSemanticLossless().ToList();
+            Assert.Equal(new List<Diff>
+            {
+                Diff.Equal("AAA"),
+            }, diffs);
+        }
+
+        [Fact]
+        public void TwoDiffs_WhenCleaned_Remains()
+        {
+            // Blank lines.
+            var diffs = new List<Diff>
+            {
+                Diff.Equal("AAA"),
+                Diff.Insert("BBB"),
+            }.CleanupSemanticLossless().ToList();
+            Assert.Equal(new List<Diff>
+            {
+                Diff.Equal("AAA"),
+                Diff.Insert("BBB"),
+            }, diffs);
+        }
+        [Fact]
+        public void ThreeDiffs_WhenCleaned_Remains()
+        {
+            // Blank lines.
+            var diffs = new List<Diff>
+            {
+                Diff.Equal("AAA"),
+                Diff.Insert("BBB"),
+                Diff.Delete("CCC"),
+            }.CleanupSemanticLossless().ToList();
+            Assert.Equal(new List<Diff>
+            {
+                Diff.Equal("AAA"),
+                Diff.Insert("BBB"),
+                Diff.Delete("CCC"),
+            }, diffs);
+        }
+        [Fact]
+        public void FourDiffs_WhenCleaned_Remains()
+        {
+            // Blank lines.
+            var diffs = new List<Diff>
+            {
+                Diff.Equal("AAA"),
+                Diff.Insert("BBB"),
+                Diff.Delete("CCC"),
+                Diff.Equal("DDD"),
+            }.CleanupSemanticLossless().ToList();
+            Assert.Equal(new List<Diff>
+            {
+                Diff.Equal("AAA"),
+                Diff.Insert("BBB"),
+                Diff.Delete("CCC"),
+                Diff.Equal("DDD"),
+            }, diffs);
+        }
+
 
         [Fact]
         public void BlankLines()
@@ -26,8 +92,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("AAA\r\n\r\nBBB"),
                 Diff.Insert("\r\nDDD\r\n\r\nBBB"),
                 Diff.Equal("\r\nEEE")
-            };
-            diffs.CleanupSemanticLossless();
+            }.CleanupSemanticLossless().ToList();
             Assert.Equal(new List<Diff>
             {
                 Diff.Equal("AAA\r\n\r\n"),
@@ -47,8 +112,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("BBB EEE\r\n"),
                 Diff.Insert("FFF GGG\r\n"),
                 Diff.Equal("HHH III"),
-            };
-            diffs.CleanupSemanticLossless();
+            }.CleanupSemanticLossless().ToList();
             Assert.Equal(new List<Diff>
             {
                 Diff.Equal("AAA\r\n"),
@@ -70,8 +134,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("AAA\r\nBBB"),
                 Diff.Insert(" DDD\r\nBBB"),
                 Diff.Equal(" EEE")
-            };
-            diffs.CleanupSemanticLossless();
+            }.CleanupSemanticLossless().ToList();
             Assert.Equal(new List<Diff>
             {
                 Diff.Equal("AAA\r\n"),
@@ -88,8 +151,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("The c"),
                 Diff.Insert("ow and the c"),
                 Diff.Equal("at.")
-            };
-            diffs.CleanupSemanticLossless();
+            }.CleanupSemanticLossless().ToList();
             Assert.Equal(new List<Diff>
             {
                 Diff.Equal("The "),
@@ -107,8 +169,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("The-c"),
                 Diff.Insert("ow-and-the-c"),
                 Diff.Equal("at.")
-            };
-            diffs.CleanupSemanticLossless();
+            }.CleanupSemanticLossless().ToList();
             Assert.Equal(new List<Diff>
             {
                 Diff.Equal("The-"),
@@ -125,8 +186,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("a"),
                 Diff.Delete("a"),
                 Diff.Equal("ax")
-            };
-            diffs.CleanupSemanticLossless();
+            }.CleanupSemanticLossless().ToList();
             Assert.Equal(new List<Diff>
             {
                 Diff.Delete("a"),
@@ -142,8 +202,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("xa"),
                 Diff.Delete("a"),
                 Diff.Equal("a")
-            };
-            diffs.CleanupSemanticLossless();
+            }.CleanupSemanticLossless().ToList();
             Assert.Equal(new List<Diff>
             {
                 Diff.Equal("xaa"),
@@ -159,8 +218,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Equal("The xxx. The "),
                 Diff.Insert("zzz. The "),
                 Diff.Equal("yyy.")
-            };
-            diffs.CleanupSemanticLossless();
+            }.CleanupSemanticLossless().ToList();
             Assert.Equal(new List<Diff>
             {
                 Diff.Equal("The xxx."),

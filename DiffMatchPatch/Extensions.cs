@@ -49,6 +49,11 @@ namespace DiffMatchPatch
             yield return item;
         }    
 
+        internal static IEnumerable<T> ItemAsEnumerable<T>(this T item)
+        {
+            yield return item;
+        }
+
         internal static IEnumerable<string> SplitBy(this string s, char separator)
         {
             StringBuilder sb = new StringBuilder();

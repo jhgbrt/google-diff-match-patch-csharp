@@ -256,7 +256,7 @@ namespace DiffMatchPatch
                         }
                         else
                         {
-                            diffs.CleanupSemanticLossless();
+                            diffs = diffs.CleanupSemanticLossless().ToList();
                             var index1 = 0;
                             foreach (var aDiff in aPatch.Diffs)
                             {

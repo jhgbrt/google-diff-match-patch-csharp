@@ -184,7 +184,7 @@ namespace DiffMatchPatch
         /// Any edit section can move as long as it doesn't cross an equality.
         /// </summary>
         /// <param name="diffs">list of Diffs</param>
-        internal static List<Diff> CleanupMerge(this List<Diff> diffs)
+        internal static IEnumerable<Diff> CleanupMerge(this List<Diff> diffs)
         {
             // Add a dummy entry at the beginning & end.
             diffs.Insert(0, Diff.Empty);
@@ -196,21 +196,25 @@ namespace DiffMatchPatch
             var lastEquality = 0;
             while (pointer < diffs.Count)
             {
-                switch (diffs[pointer].Operation)
+                var diff = diffs[pointer];
+
+                (sbInsert, sbDelete) = diff.Operation switch
+                {
+                    Insert => (sbInsert.Append(diff.Text), sbDelete),
+                    Delete => (sbInsert, sbDelete.Append(diff.Text)),
+                    _ => (sbInsert, sbDelete)
+                };
+
+                switch (diff.Operation)
                 {
                     case Insert:
-                        nofdiffs++;
-                        sbInsert.Append(diffs[pointer].Text);
-                        pointer++;
-                        break;
                     case Delete:
                         nofdiffs++;
-                        sbDelete.Append(diffs[pointer].Text);
                         pointer++;
                         break;
                     case Equal:
                         // Upon reaching an equality, check for prior redundancies.
-                        if (nofdiffs > 1)
+                        if (sbInsert.Length > 0 || sbDelete.Length > 0)
                         {
                             // first equality after number of inserts/deletes
                             // Factor out any common prefixies.
@@ -222,6 +226,8 @@ namespace DiffMatchPatch
                                 sbDelete.Remove(0, prefixLength);
                                 diffs[lastEquality] = diffs[lastEquality].Append(commonprefix);
                             }
+
+
                             // Factor out any common suffixies.
                             var suffixLength = TextUtil.CommonSuffix(sbInsert, sbDelete);
                             if (suffixLength > 0)
@@ -261,11 +267,11 @@ namespace DiffMatchPatch
                         break;
                 }
             }
-            if (diffs.First().IsEmpty && diffs.Count > 1)
+            if (diffs[0].IsEmpty && diffs.Count > 1)
             {
                 diffs.RemoveAt(0);
             }
-            if (diffs.Last().IsEmpty)
+            if (diffs[^1].IsEmpty)
             {
                 diffs.RemoveAt(diffs.Count - 1);  // Remove the dummy entry at the end.
             }
@@ -310,81 +316,113 @@ namespace DiffMatchPatch
             return diffs;
         }
 
+        record EditBetweenEqualities(string Equality1, string Edit, string Equality2)
+        {
+            public int Score => DiffCleanupSemanticScore(Equality1, Edit) + DiffCleanupSemanticScore(Edit, Equality2);
+
+            // Shift the edit as far left as possible.
+            public EditBetweenEqualities ShiftLeft()
+            {
+                var commonOffset = TextUtil.CommonSuffix(Equality1, Edit);
+
+                if (commonOffset > 0)
+                {
+                    var commonString = Edit[^commonOffset..];
+                    return this with { Equality1 = Equality1.Substring(0, Equality1.Length - commonOffset), Edit = commonString + Edit.Substring(0, Edit.Length - commonOffset), Equality2 = commonString + Equality2 };
+                }
+                else
+                {
+                    return this;
+                }
+            }
+
+            // Shift one right
+            EditBetweenEqualities ShiftRight() => this with { Equality1 = Equality1 + Edit[0], Edit = Edit[1..] + Equality2[0], Equality2 = Equality2[1..] };
+
+            public IEnumerable<EditBetweenEqualities> TraverseRight()
+            {
+                var item = this;
+                while (item.Edit.Length != 0 && item.Equality2.Length != 0 && item.Edit[0] == item.Equality2[0])
+                {
+                    yield return item = item.ShiftRight();
+                }
+            }
+
+            public IEnumerable<Diff> ToDiffs(Operation edit)
+            {
+                yield return Diff.Equal(Equality1);
+                yield return Diff.Create(edit, Edit);
+                yield return Diff.Equal(Equality2);
+            }
+        }
+
         /// <summary>
         /// Look for single edits surrounded on both sides by equalities
         /// which can be shifted sideways to align the edit to a word boundary.
         /// e.g: The c<ins>at c</ins>ame. -> The <ins>cat </ins>came.
         /// </summary>
         /// <param name="diffs"></param>
-        internal static List<Diff> CleanupSemanticLossless(this List<Diff> diffs)
+        internal static IEnumerable<Diff> CleanupSemanticLossless(this IEnumerable<Diff> diffs)
         {
-            var pointer = 1;
-            // Intentionally ignore the first and last element (don't need checking).
-            while (pointer < diffs.Count - 1)
+            var enumerator = diffs.GetEnumerator();
+
+            if (!enumerator.MoveNext()) yield break;
+
+            var previous = enumerator.Current;
+            
+            if (!enumerator.MoveNext())
             {
-                var previous = diffs[pointer - 1];
-                var current = diffs[pointer];
-                var next = diffs[pointer + 1];
+                yield return previous;
+                yield break;
+            }
+            
+            var current = enumerator.Current;
+            
+            while (true)
+            {
+                if (!enumerator.MoveNext())
+                {
+                    yield return previous;
+                    yield return current;
+                    yield break;
+                }
+
+                var next = enumerator.Current;
 
                 if (previous.Operation == Equal && next.Operation == Equal)
                 {
                     // This is a single edit surrounded by equalities.
-                    var equality1 = previous.Text;
-                    var edit = current.Text;
-                    var equality2 = next.Text;
+                    var item = new EditBetweenEqualities(previous.Text, current.Text, next.Text).ShiftLeft();
 
-                    // First, shift the edit as far left as possible.
-                    var commonOffset = TextUtil.CommonSuffix(equality1, edit);
-                    if (commonOffset > 0)
+                    // Second, step character by character right, looking for the best fit.
+                    var best = item.TraverseRight().Aggregate(item, (best, x) => best.Score > x.Score ? best : x);
+
+                    if (previous.Text != best.Equality1)
                     {
-                        var commonString = edit[^commonOffset..];
-                        equality1 = equality1.Substring(0, equality1.Length - commonOffset);
-                        edit = commonString + edit.Substring(0, edit.Length - commonOffset);
-                        equality2 = commonString + equality2;
+                        // We have an improvement; yield the improvement instead of the original diffs
+                        foreach (var d in best.ToDiffs(current.Operation).Where(d =>!d.IsEmpty)) 
+                            yield return d;
+                        
+                        if (!enumerator.MoveNext()) 
+                            yield break;
+
+                        previous = current;
+                        current = next;
+                        next = enumerator.Current;
                     }
-
-                    // Second, step character by character right,
-                    // looking for the best fit.
-                    var bestEquality1 = equality1;
-                    var bestEdit = edit;
-                    var bestEquality2 = equality2;
-                    var bestScore = DiffCleanupSemanticScore(equality1, edit) + DiffCleanupSemanticScore(edit, equality2);
-                    while (edit.Length != 0 && equality2.Length != 0 && edit[0] == equality2[0])
+                    else
                     {
-                        equality1 += edit[0];
-                        edit = edit[1..] + equality2[0];
-                        equality2 = equality2[1..];
-                        var score = DiffCleanupSemanticScore(equality1, edit) + DiffCleanupSemanticScore(edit, equality2);
-                        // The >= encourages trailing rather than leading whitespace on
-                        // edits.
-                        if (score >= bestScore)
-                        {
-                            bestScore = score;
-                            bestEquality1 = equality1;
-                            bestEdit = edit;
-                            bestEquality2 = equality2;
-                        }
-                    }
-
-                    if (previous.Text != bestEquality1)
-                    {
-                        // We have an improvement, save it back to the diff.
-
-                        var newDiffs = new[]
-                        {
-                            Diff.Equal(bestEquality1),
-                            current.Replace(bestEdit),
-                            Diff.Equal(bestEquality2)
-                        }.Where(d => !string.IsNullOrEmpty(d.Text))
-                            .ToArray();
-
-                        diffs.Splice(pointer - 1, 3, newDiffs);
-                        pointer -= (3 - newDiffs.Length);
+                        yield return previous;
                     }
                 }
-                pointer++;
+                else
+                {
+                    yield return previous;
+                }
+
+                previous = current;
+                current = next;
             }
-            return diffs;
         }
 
         /// <summary>
@@ -614,8 +652,7 @@ namespace DiffMatchPatch
                 pointer++;
             }
 
-            diffs.CleanupMerge();
-            diffs.CleanupSemanticLossless();
+            diffs = diffs.CleanupMerge().CleanupSemanticLossless().ToList();
 
             // Find any overlaps between deletions and insertions.
             // e.g: <del>abcxxx</del><ins>xxxdef</ins>
