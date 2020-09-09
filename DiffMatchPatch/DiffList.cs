@@ -480,8 +480,9 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="diffs"></param>
         /// <param name="diffEditCost"></param>
-        internal static List<Diff> CleanupEfficiency(this List<Diff> diffs, short diffEditCost = 4)
+        internal static IEnumerable<Diff> CleanupEfficiency(this IEnumerable<Diff> input, short diffEditCost = 4)
         {
+            var diffs = input.ToList();
             var changes = false;
             // Stack of indices where equalities are found.
             var equalities = new Stack<int>();
@@ -498,14 +499,15 @@ namespace DiffMatchPatch
 
             for (var i = 0; i < diffs.Count; i++)
             {
-                if (diffs[i].Operation == Equal)
+                var diff = diffs[i];
+                if (diff.Operation == Equal)
                 {  // Equality found.
-                    if (diffs[i].Text.Length < diffEditCost && (insertionAfterLastEquality || deletionAfterLastEquality))
+                    if (diff.Text.Length < diffEditCost && (insertionAfterLastEquality || deletionAfterLastEquality))
                     {
                         // Candidate found.
                         equalities.Push(i);
                         (insertionBeforeLastEquality, deletionBeforeLastEquality) = (insertionAfterLastEquality, deletionAfterLastEquality);
-                        lastEquality = diffs[i].Text;
+                        lastEquality = diff.Text;
                     }
                     else
                     {
@@ -517,7 +519,7 @@ namespace DiffMatchPatch
                 }
                 else
                 {  // An insertion or deletion.
-                    if (diffs[i].Operation == Delete)
+                    if (diff.Operation == Delete)
                     {
                         deletionAfterLastEquality = true;
                     }
@@ -539,6 +541,7 @@ namespace DiffMatchPatch
                                 && (insertionBeforeLastEquality ? 1 : 0) + (deletionBeforeLastEquality ? 1 : 0) + (insertionAfterLastEquality ? 1 : 0)
                                 + (deletionAfterLastEquality ? 1 : 0) == 3)))
                     {
+                        // replace equality by delete/insert
                         diffs.Splice(equalities.Peek(), 1, Diff.Delete(lastEquality), Diff.Insert(lastEquality));
                         equalities.Pop();  // Throw away the equality we just deleted.
                         lastEquality = string.Empty;
@@ -565,10 +568,10 @@ namespace DiffMatchPatch
 
             if (changes)
             {
-                diffs = diffs.CleanupMerge().ToList();
+                return diffs.CleanupMerge();
             }
 
-            return diffs;
+            return input;
         }
 
         /// <summary>
