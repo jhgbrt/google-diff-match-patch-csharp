@@ -453,6 +453,22 @@ namespace DiffMatchPatch.Tests
             Assert.Equal("x123\tTrue", resultStr);
         }
 
+        [Fact]
+        public void LargeEquality()
+        {
+            var diffs = new List<Diff>
+            {
+                Diff.Insert(" "),
+                Diff.Equal("a"),
+                Diff.Insert("nd"),
+                Diff.Equal(" [[Pennsylvania]]"),
+                Diff.Delete(" and [[New")
+            };
 
+            var patch = Patch.FromDiffs(diffs);
+
+            Assert.Equal(diffs,
+                Diff.Compute("a [[Pennsylvania]] and [[New", " and [[Pennsylvania]]", 0, false));
+        }
     }
 }
