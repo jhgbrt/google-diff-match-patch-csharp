@@ -135,7 +135,7 @@ namespace DiffMatchPatch.Tests
                 Diff.Delete("t"),
                 Diff.Insert("p")
             };
-            Assert.Equal(diffs, DiffAlgorithm.MyersDiffBisect(a, b, new CancellationToken(), false));
+            Assert.Equal(diffs, DiffAlgorithm.MyersDiffBisect(a, b, false, new CancellationToken()));
         }
 
 
@@ -146,7 +146,7 @@ namespace DiffMatchPatch.Tests
             var b = "map";
 
             var diffs = new List<Diff> { Diff.Delete("cat"), Diff.Insert("map") };
-            Assert.Equal(diffs, DiffAlgorithm.MyersDiffBisect(a, b, new CancellationToken(true), true));
+            Assert.Equal(diffs, DiffAlgorithm.MyersDiffBisect(a, b, true, new CancellationToken(true)));
         }
     }
 }

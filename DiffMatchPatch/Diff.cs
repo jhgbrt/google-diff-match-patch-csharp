@@ -40,11 +40,11 @@ namespace DiffMatchPatch
             using var cts = timeoutInSeconds <= 0
                 ? new CancellationTokenSource()
                 : new CancellationTokenSource(TimeSpan.FromSeconds(timeoutInSeconds));
-            return Compute(text1, text2, checklines, cts.Token, timeoutInSeconds > 0);
+            return Compute(text1, text2, checklines, timeoutInSeconds > 0, cts.Token);
         }
 
-        public static List<Diff> Compute(string text1, string text2, bool checkLines, CancellationToken token, bool optimizeForSpeed) 
-            => DiffAlgorithm.Compute(text1, text2, checkLines, token, optimizeForSpeed);
+        public static List<Diff> Compute(string text1, string text2, bool checkLines, bool optimizeForSpeed, CancellationToken token)
+            => DiffAlgorithm.Compute(text1, text2, checkLines, optimizeForSpeed, token);
 
         public bool IsLargeDelete(int size) => Operation == Operation.Delete && Text.Length > size;
 

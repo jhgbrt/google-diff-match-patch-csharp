@@ -190,7 +190,7 @@ namespace DiffMatchPatch.Tests
             using (var cts = new CancellationTokenSource(timeout))
             {
                 var stopWatch = Stopwatch.StartNew();
-                Diff.Compute(a, b, false, cts.Token, false);
+                Diff.Compute(a, b, false, false, cts.Token);
                 var elapsed = stopWatch.Elapsed;
                 // assert that elapsed time is between timeout and 2*timeout (be forgiving)
                 Assert.True(timeout <= elapsed.Add(TimeSpan.FromMilliseconds(1)), string.Format("Expected timeout < elapsed. Elapsed = {0}, Timeout = {1}.", elapsed, timeout));
