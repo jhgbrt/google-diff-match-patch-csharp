@@ -41,7 +41,7 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="diffs"></param>
         /// <returns></returns>
-        public static int Levenshtein(this IEnumerable<Diff> diffs)
+        internal static int Levenshtein(this IEnumerable<Diff> diffs)
         {
             var state = new LevenshteinState(0, 0, 0);
             foreach (var aDiff in diffs)
