@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using static DiffMatchPatch.Operation;
 
 namespace DiffMatchPatch
@@ -143,8 +144,13 @@ namespace DiffMatchPatch
         /// <param name="diffTimeout">timeout in seconds</param>
         /// <param name="diffEditCost">Cost of an empty edit operation in terms of edit characters.</param>
         /// <returns>List of Patch objects</returns>
-        public static ImmutableList<Patch> Compute(string text1, string text2, float diffTimeout = 0, short diffEditCost = 4) 
-            => Compute(text1, Diff.Compute(text1, text2, diffTimeout).CleanupSemantic().CleanupEfficiency(diffEditCost)).ToImmutableList();
+        public static ImmutableList<Patch> Compute(string text1, string text2, float diffTimeout = 0, short diffEditCost = 4)
+        {
+            using var cts = diffTimeout <= 0
+                ? new CancellationTokenSource()
+                : new CancellationTokenSource(TimeSpan.FromSeconds(diffTimeout));
+            return Compute(text1, DiffAlgorithm.Compute(text1, text2, true, true, cts.Token).CleanupSemantic().CleanupEfficiency(diffEditCost)).ToImmutableList();
+        }
 
         /// <summary>
         /// Compute a list of patches to turn text1 into text2.

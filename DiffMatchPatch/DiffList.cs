@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -578,8 +579,9 @@ namespace DiffMatchPatch
         /// Reduce the number of edits by eliminating semantically trivial equalities.
         /// </summary>
         /// <param name="diffs"></param>
-        internal static List<Diff> CleanupSemantic(this List<Diff> diffs)
+        internal static List<Diff> CleanupSemantic(this IEnumerable<Diff> input)
         {
+            var diffs = input.ToList();
             // Stack of indices where equalities are found.
             var equalities = new Stack<int>();
             // Always equal to equalities[equalitiesLength-1][1]

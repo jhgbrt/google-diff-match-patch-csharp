@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using static DiffMatchPatch.Operation;
@@ -20,10 +21,10 @@ namespace DiffMatchPatch
         /// <param name="optimizeForSpeed">Should optimizations be enabled?</param>
         /// <param name="token">Cancellation token for cooperative cancellation</param>
         /// <returns></returns>
-        internal static List<Diff> Compute(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, bool checklines, bool optimizeForSpeed, CancellationToken token)
+        internal static IEnumerable<Diff> Compute(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, bool checklines, bool optimizeForSpeed, CancellationToken token)
         {
             if (text1.Length == text2.Length && text1.Length == 0)
-                return new List<Diff>();
+                return Enumerable.Empty<Diff>();
 
             var commonlength = TextUtil.CommonPrefix(text1, text2);
 
@@ -61,8 +62,7 @@ namespace DiffMatchPatch
                 diffs.Add(Diff.Equal(commonsuffix));
             }
 
-            diffs = diffs.CleanupMerge().ToList();
-            return diffs;
+            return diffs.CleanupMerge();
         }
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace DiffMatchPatch
         /// <param name="optimizeForSpeed">Should optimizations be enabled?</param>
         /// <param name="token">Cancellation token for cooperative cancellation</param>
         /// <returns></returns>
-        private static List<Diff> ComputeImpl(
+        private static IEnumerable<Diff> ComputeImpl(
             ReadOnlySpan<char> text1,
             ReadOnlySpan<char> text2,
             bool checklines,
@@ -86,19 +86,13 @@ namespace DiffMatchPatch
             if (text1.Length == 0)
             {
                 // Just add some text (speedup).
-                return new List<Diff>
-                {
-                    Diff.Insert(text2) 
-                };
+                return Diff.Insert(text2).ItemAsEnumerable();
             }
 
             if (text2.Length == 0)
             {
                 // Just delete some text (speedup).
-                return new List<Diff>
-                {
-                    Diff.Delete(text1)
-                };
+                return Diff.Delete(text1).ItemAsEnumerable();
             }
 
             var longtext = text1.Length > text2.Length ? text1 : text2;
@@ -109,7 +103,7 @@ namespace DiffMatchPatch
                 // Shorter text is inside the longer text (speedup).
                 if (text1.Length > text2.Length)
                 {
-                    return new List<Diff>
+                    return new[]
                     {
                         Diff.Delete(longtext.Slice(0, i)),
                         Diff.Equal(shorttext),
@@ -118,7 +112,7 @@ namespace DiffMatchPatch
                 }
                 else
                 {
-                    return new List<Diff>
+                    return new[]
                     {
                         Diff.Insert(longtext.Slice(0, i)),
                         Diff.Equal(shorttext),
@@ -131,7 +125,7 @@ namespace DiffMatchPatch
             {
                 // Single character string.
                 // After the previous speedup, the character can't be an equality.
-                return new List<Diff>
+                return new[]
                 {
                     Diff.Delete(text1),
                     Diff.Insert(text2)
@@ -151,10 +145,9 @@ namespace DiffMatchPatch
                     var diffsB = Compute(result.Suffix1, result.Suffix2, checklines, optimizeForSpeed, token);
 
                     // Merge the results.
-                    return  diffsA
+                    return diffsA
                         .Concat(Diff.Equal(result.CommonMiddle))
-                        .Concat(diffsB)
-                        .ToList();
+                        .Concat(diffsB);
                 }
             }
             if (checklines && text1.Length > 100 && text2.Length > 100)
@@ -189,7 +182,7 @@ namespace DiffMatchPatch
         }
 
         // Rediff any replacement blocks, this time character-by-character.
-        private static IEnumerable<Diff> RediffAfterLineDiff(List<Diff> diffs, bool optimizeForSpeed, CancellationToken token)
+        private static IEnumerable<Diff> RediffAfterLineDiff(IEnumerable<Diff> diffs, bool optimizeForSpeed, CancellationToken token)
         {
             var ins = new StringBuilder();
             var del = new StringBuilder();
@@ -238,7 +231,7 @@ namespace DiffMatchPatch
         /// <param name="optimizeForSpeed"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        internal static List<Diff> MyersDiffBisect(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, bool optimizeForSpeed, CancellationToken token)
+        internal static IEnumerable<Diff> MyersDiffBisect(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, bool optimizeForSpeed, CancellationToken token)
         {
             // Cache the text lengths to prevent multiple calls.
             var text1Length = text1.Length;
@@ -375,8 +368,7 @@ namespace DiffMatchPatch
             }
             // Diff took too long and hit the deadline or
             // number of Diffs equals number of characters, no commonality at all.
-            var diffs = new List<Diff> { Diff.Delete(text1), Diff.Insert(text2) };
-            return diffs;
+            return new [] { Diff.Delete(text1), Diff.Insert(text2) };
         }
 
         /// <summary>
@@ -390,7 +382,7 @@ namespace DiffMatchPatch
         /// <param name="optimizeForSpeed"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        private static List<Diff> BisectSplit(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, int x, int y, bool optimizeForSpeed, CancellationToken token)
+        private static IEnumerable<Diff> BisectSplit(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2, int x, int y, bool optimizeForSpeed, CancellationToken token)
         {
             var text1A = text1.Slice(0, x);
             var text2A = text2.Slice(0, y);
@@ -398,11 +390,10 @@ namespace DiffMatchPatch
             var text2B = text2[y..];
 
             // Compute both Diffs serially.
-            var diffs = Compute(text1A, text2A, false, optimizeForSpeed, token);
+            var diffsa = Compute(text1A, text2A, false, optimizeForSpeed, token);
             var diffsb = Compute(text1B, text2B, false, optimizeForSpeed, token);
 
-            diffs.AddRange(diffsb);
-            return diffs;
+            return diffsa.Concat(diffsb);
         }
 
     }

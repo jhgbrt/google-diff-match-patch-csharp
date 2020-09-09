@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using System.Threading;
 
 namespace DiffMatchPatch
@@ -35,7 +37,7 @@ namespace DiffMatchPatch
         /// <param name="timeoutInSeconds">if specified, certain optimizations may be enabled to meet the time constraint, possibly resulting in a less optimal diff</param>
         /// <param name="checklines">If false, then don't run a line-level diff first to identify the changed areas. If true, then run a faster slightly less optimal diff.</param>
         /// <returns></returns>
-        public static List<Diff> Compute(string text1, string text2, float timeoutInSeconds = 0f, bool checklines = true)
+        public static ImmutableList<Diff> Compute(string text1, string text2, float timeoutInSeconds = 0f, bool checklines = true)
         {
             using var cts = timeoutInSeconds <= 0
                 ? new CancellationTokenSource()
@@ -43,8 +45,8 @@ namespace DiffMatchPatch
             return Compute(text1, text2, checklines, timeoutInSeconds > 0, cts.Token);
         }
 
-        public static List<Diff> Compute(string text1, string text2, bool checkLines, bool optimizeForSpeed, CancellationToken token)
-            => DiffAlgorithm.Compute(text1, text2, checkLines, optimizeForSpeed, token);
+        public static ImmutableList<Diff> Compute(string text1, string text2, bool checkLines, bool optimizeForSpeed, CancellationToken token)
+            => DiffAlgorithm.Compute(text1, text2, checkLines, optimizeForSpeed, token).ToImmutableList();
 
         public bool IsLargeDelete(int size) => Operation == Operation.Delete && Text.Length > size;
 

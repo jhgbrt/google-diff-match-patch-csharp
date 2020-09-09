@@ -232,7 +232,7 @@ namespace DiffMatchPatch.Tests
             Assert.Equal(textsTextmode, textsLinemode);
         }
 
-        private static Tuple<string, string> RebuildTexts(List<Diff> diffs)
+        private static Tuple<string, string> RebuildTexts(IEnumerable<Diff> diffs)
         {
             var text = Tuple.Create(new StringBuilder(), new StringBuilder());
             foreach (var myDiff in diffs)
