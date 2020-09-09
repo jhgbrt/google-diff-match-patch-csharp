@@ -19,6 +19,7 @@
  * http://code.google.com/p/google-diff-match-patch/
  */
 
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -71,6 +72,74 @@ namespace DiffMatchPatch
             }
             if (sb.Length > 0)
                 yield return sb.ToString();
+        }
+
+        public static int IndexOf(this StringBuilder sb, string pattern)
+        {
+            return sb.IndexOf(pattern, 0);
+        }
+
+        public static int IndexOf(this StringBuilder sb, string pattern, int start)
+        {
+            if (string.IsNullOrEmpty(pattern))
+                return -1;
+
+
+            for (int i = start; i < sb.Length - pattern.Length + 1; i++)
+            {
+                for (int j = 0; j < pattern.Length; j++)
+                {
+                    if (pattern[j] != sb[j + i])
+                    {
+                        break;
+                    }
+                    if (j == pattern.Length - 1)
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            return -1;
+        }
+
+        public static int LastIndexOf(this StringBuilder sb, string pattern)
+        {
+            return sb.LastIndexOf(pattern, sb.Length - 1);
+        }
+
+
+        public static int LastIndexOf(this StringBuilder sb, string pattern, int start)
+        {
+            if (string.IsNullOrEmpty(pattern))
+                return -1;
+
+            for (int i = Math.Min(sb.Length - 1, start); i >= pattern.Length - 1; i--)
+            {
+                for (int j = 0; j < pattern.Length; j++)
+                {
+                    if (pattern[pattern.Length - 1 - j] != sb[i - j])
+                    {
+                        break;
+                    }
+                    if (j == pattern.Length - 1)
+                    {
+                        return i - pattern.Length + 1;
+                    }
+                }
+            }
+
+            return -1;
+        }
+
+        public static StringBuilder Substring(this StringBuilder sb, int index, int count)
+        {
+            return sb.Remove(0, index).Remove(count, sb.Length - count);
+        }
+
+        public static IEnumerable<char> AsEnumerable(this StringBuilder sb)
+        {
+            for (int i = 0; i < sb.Length; i++) yield return sb[i];
         }
     }
 }

@@ -10,6 +10,9 @@ namespace DiffMatchPatch
 {
     public static class DiffList
     {
+        public static IEnumerable<Diff> Cleanup(this IEnumerable<Diff> diffs)
+            => diffs.CleanupSemantic().CleanupEfficiency();
+
         /// <summary>
         /// Compute and return the source text (all equalities and deletions).
         /// </summary>
