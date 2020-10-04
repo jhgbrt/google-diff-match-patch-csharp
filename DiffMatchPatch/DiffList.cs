@@ -10,9 +10,6 @@ namespace DiffMatchPatch
 {
     public static class DiffList
     {
-        public static IEnumerable<Diff> Cleanup(this IEnumerable<Diff> diffs)
-            => diffs.CleanupSemantic().CleanupEfficiency();
-
         /// <summary>
         /// Compute and return the source text (all equalities and deletions).
         /// </summary>
@@ -577,6 +574,31 @@ namespace DiffMatchPatch
 
             return input;
         }
+        /// <summary>
+        /// A diff of two unrelated texts can be filled with coincidental matches. 
+        /// For example, the diff of "mouse" and "sofas" is 
+        /// `[(-1, "m"), (1, "s"), (0, "o"), (-1, "u"), (1, "fa"), (0, "s"), (-1, "e")]`. 
+        /// While this is the optimum diff, it is difficult for humans to understand. Semantic 
+        /// cleanup rewrites the diff, expanding it into a more intelligible format. The above 
+        /// example would become: `[(-1, "mouse"), (1, "sofas")]`.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static IImmutableList<Diff> MakeHumanReadable(this IEnumerable<Diff> input) => input.CleanupSemantic().ToImmutableList();
+        /// <summary>
+        /// This function is similar to `OptimizeForReadability`, except that instead of optimising a diff 
+        /// to be human-readable, it optimises the diff to be efficient for machine processing. The results 
+        /// of both cleanup types are often the same.
+        /// The efficiency cleanup is based on the observation that a diff made up of large numbers of 
+        /// small diffs edits may take longer to process(in downstream applications) or take more capacity 
+        /// to store or transmit than a smaller number of larger diffs.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="diffEditCost">The cost of handling a new edit in terms of handling extra characters in an existing edit. 
+        /// The default value is 4, which means if expanding the length of a diff by three characters can eliminate one edit, 
+        /// then that optimisation will reduce the total costs</param>
+        /// <returns></returns>
+        public static IImmutableList<Diff> OptimizeForMachineProcessing(this IEnumerable<Diff> input, short diffEditCost = 4) => input.CleanupEfficiency(diffEditCost).ToImmutableList();
 
         /// <summary>
         /// Reduce the number of edits by eliminating semantically trivial equalities.

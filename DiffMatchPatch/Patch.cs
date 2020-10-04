@@ -8,7 +8,7 @@ using static DiffMatchPatch.Operation;
 
 namespace DiffMatchPatch
 {
-    public record Patch(int Start1, int Length1, int Start2, int Length2, ImmutableList<Diff> Diffs)
+    public record Patch(int Start1, int Length1, int Start2, int Length2, ImmutableListWithValueSemantics<Diff> Diffs)
     {
         public Patch Bump(int length) => this with { Start1 = Start1 + length, Start2 = Start2 + length };
 
@@ -144,12 +144,12 @@ namespace DiffMatchPatch
         /// <param name="diffTimeout">timeout in seconds</param>
         /// <param name="diffEditCost">Cost of an empty edit operation in terms of edit characters.</param>
         /// <returns>List of Patch objects</returns>
-        public static ImmutableList<Patch> Compute(string text1, string text2, float diffTimeout = 0, short diffEditCost = 4)
+        public static ImmutableListWithValueSemantics<Patch> Compute(string text1, string text2, float diffTimeout = 0, short diffEditCost = 4)
         {
             using var cts = diffTimeout <= 0
                 ? new CancellationTokenSource()
                 : new CancellationTokenSource(TimeSpan.FromSeconds(diffTimeout));
-            return Compute(text1, DiffAlgorithm.Compute(text1, text2, true, true, cts.Token).CleanupSemantic().CleanupEfficiency(diffEditCost)).ToImmutableList();
+            return Compute(text1, DiffAlgorithm.Compute(text1, text2, true, true, cts.Token).CleanupSemantic().CleanupEfficiency(diffEditCost)).ToImmutableList().WithValueSemantics();
         }
 
         /// <summary>
@@ -158,8 +158,8 @@ namespace DiffMatchPatch
         /// </summary>
         /// <param name="diffs">array of diff objects for text1 to text2</param>
         /// <returns>List of Patch objects</returns>
-        public static ImmutableList<Patch> FromDiffs(IEnumerable<Diff> diffs) 
-            => Compute(diffs.Text1(), diffs).ToImmutableList();
+        public static ImmutableListWithValueSemantics<Patch> FromDiffs(IEnumerable<Diff> diffs) 
+            => Compute(diffs.Text1(), diffs).ToImmutableList().WithValueSemantics();
 
         /// <summary>
         /// Compute a list of patches to turn text1 into text2.
