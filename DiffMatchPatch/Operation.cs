@@ -1,9 +1,8 @@
-namespace DiffMatchPatch
+namespace DiffMatchPatch;
+
+public enum Operation
 {
-    public enum Operation
-    {
-        Delete = '-',
-        Insert = '+',
-        Equal = ' '
-    }
+    Delete = '-',
+    Insert = '+',
+    Equal = ' '
 }
