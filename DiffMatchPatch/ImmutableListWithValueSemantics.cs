@@ -2,7 +2,7 @@
 
 public class ImmutableListWithValueSemantics<T> : IImmutableList<T>, IEquatable<IImmutableList<T>>
 {
-    ImmutableList<T> _list;
+    readonly ImmutableList<T> _list;
 
     public ImmutableListWithValueSemantics(ImmutableList<T> list) => _list = list;
 
@@ -48,5 +48,5 @@ public class ImmutableListWithValueSemantics<T> : IImmutableList<T>, IEquatable<
 
 static class Ex
 {
-    public static ImmutableListWithValueSemantics<T> WithValueSemantics<T>(this ImmutableList<T> list) => new ImmutableListWithValueSemantics<T>(list);
+    public static ImmutableListWithValueSemantics<T> WithValueSemantics<T>(this ImmutableList<T> list) => new(list);
 }

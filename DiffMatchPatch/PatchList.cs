@@ -5,7 +5,7 @@ namespace DiffMatchPatch;
 public static class PatchList
 {
 
-    internal static string NullPadding(short paddingLength = 4) => new string(Enumerable.Range(1, paddingLength).Select(i => (char)i).ToArray());
+    internal static string NullPadding(short paddingLength = 4) => new(Enumerable.Range(1, paddingLength).Select(i => (char)i).ToArray());
 
     /// <summary>
     /// Add some padding on text start and end so that edges can match something.
@@ -55,7 +55,7 @@ public static class PatchList
     /// <returns></returns>
     public static string ToText(this IEnumerable<Patch> patches) => patches.Aggregate(new StringBuilder(), (sb, patch) => sb.Append(patch)).ToString();
 
-    static readonly Regex PatchHeader = new Regex("^@@ -(\\d+),?(\\d*) \\+(\\d+),?(\\d*) @@$");
+    static readonly Regex PatchHeader = new("^@@ -(\\d+),?(\\d*) \\+(\\d+),?(\\d*) @@$");
 
     /// <summary>
     /// Parse a textual representation of patches and return a List of Patch

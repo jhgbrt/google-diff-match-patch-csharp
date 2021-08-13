@@ -28,7 +28,7 @@ public static class DiffList
 
     record LevenshteinState(int Insertions, int Deletions, int Levenshtein)
     {
-        public LevenshteinState Consolidate() => new LevenshteinState(0, 0, Levenshtein + Math.Max(Insertions, Deletions));
+        public LevenshteinState Consolidate() => new(0, 0, Levenshtein + Math.Max(Insertions, Deletions));
     }
 
     /// <summary>
@@ -301,13 +301,14 @@ public static class DiffList
     }
 
 
-    record EditBetweenEqualities(string Equality1, string Edit, string Equality2)
+    record struct EditBetweenEqualities(string Equality1, string Edit, string Equality2)
     {
         public int Score => DiffCleanupSemanticScore(Equality1, Edit) + DiffCleanupSemanticScore(Edit, Equality2);
 
-        record ScoreHelper(string Str, Index I, Regex Regex)
+        record struct ScoreHelper(string Str, Index I, Regex Regex)
         {
             char C => Str[I];
+            public bool IsEmpty => Str.Length == 0;
             public bool NonAlphaNumeric => !char.IsLetterOrDigit(C);
             public bool IsWhitespace => char.IsWhiteSpace(C);
             public bool IsLineBreak => C == '\n' || C == '\r';
@@ -317,44 +318,16 @@ public static class DiffList
         /// Given two strings, computes a score representing whether the internal boundary falls on logical boundaries.
         /// higher is better
         private static int DiffCleanupSemanticScore(string one, string two)
-        {
-            if (one.Length == 0 || two.Length == 0)
+            => (h1: new ScoreHelper(one, ^1, BlankLineEnd), h2: new ScoreHelper(two, 0, BlankLineStart)) switch
             {
-                // Edges are the best.
-                return 6;
-            }
-
-            var h1 = new ScoreHelper(one, ^1, BlankLineEnd);
-            var h2 = new ScoreHelper(two, 0, BlankLineStart);
-
-
-            if (h1.IsBlankLine || h2.IsBlankLine)
-            {
-                // Five points for blank lines.
-                return 5;
-            }
-            if (h1.IsLineBreak || h2.IsLineBreak)
-            {
-                // Four points for line breaks.
-                return 4;
-            }
-            if (h1.NonAlphaNumeric && !h1.IsWhitespace && h2.IsWhitespace)
-            {
-                // Three points for end of sentences.
-                return 3;
-            }
-            if (h1.IsWhitespace || h2.IsWhitespace)
-            {
-                // Two points for whitespace.
-                return 2;
-            }
-            if (h1.NonAlphaNumeric || h2.NonAlphaNumeric)
-            {
-                // One point for non-alphanumeric.
-                return 1;
-            }
-            return 0;
-        }
+                { h1.IsEmpty: true } or { h2.IsEmpty: true } => 6,
+                { h1.IsBlankLine: true } or { h2.IsBlankLine: true } => 5,
+                { h1.IsLineBreak: true } or { h2.IsLineBreak: true } => 4,
+                { h1.NonAlphaNumeric: true } and { h1.IsWhitespace: false } and { h2.IsWhitespace: true } => 3,
+                { h1.IsWhitespace: true } or { h2.IsWhitespace: true } => 2,
+                { h1.NonAlphaNumeric: true } or { h2.NonAlphaNumeric: true } => 1,
+                _ => 0
+            };
 
         // Shift the edit as far left as possible.
         public EditBetweenEqualities ShiftLeft()
@@ -465,8 +438,8 @@ public static class DiffList
     }
 
     // Define some regex patterns for matching boundaries.
-    private static readonly Regex BlankLineEnd = new Regex("\\n\\r?\\n\\Z", RegexOptions.Compiled);
-    private static readonly Regex BlankLineStart = new Regex("\\A\\r?\\n\\r?\\n", RegexOptions.Compiled);
+    private static readonly Regex BlankLineEnd = new("\\n\\r?\\n\\Z", RegexOptions.Compiled);
+    private static readonly Regex BlankLineStart = new("\\A\\r?\\n\\r?\\n", RegexOptions.Compiled);
 
     /// <summary>
     /// Reduce the number of edits by eliminating operationally trivial equalities.

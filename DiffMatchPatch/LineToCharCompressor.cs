@@ -38,8 +38,8 @@ class LineToCharCompressor
 
     // e.g. _lineArray[4] == "Hello\n"
     // e.g. _lineHash["Hello\n"] == 4
-    readonly List<string> _lineArray = new List<string>();
-    readonly Dictionary<string, char> _lineHash = new Dictionary<string, char>();
+    readonly List<string> _lineArray = new();
+    readonly Dictionary<string, char> _lineHash = new();
 
     void EnsureHashed(string line)
     {

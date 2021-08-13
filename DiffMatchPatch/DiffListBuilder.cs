@@ -34,7 +34,7 @@ internal static class DiffListBuilder
 
         // Add the prefix.
         var begin1 = Math.Max(0, start2 - padding);
-        var prefix = text.Substring(begin1, start2 - begin1);
+        var prefix = text[begin1..start2];
         if (prefix.Length != 0)
         {
             diffListBuilder.Insert(0, Diff.Equal(prefix));

@@ -42,7 +42,7 @@ static class DiffAlgorithm
         text1 = text1.Slice(0, text1.Length - commonlength);
         text2 = text2.Slice(0, text2.Length - commonlength);
 
-        List<Diff> diffs = new List<Diff>();
+        List<Diff> diffs = new();
         // Compute the diff on the middle block.
         if (commonprefix.Length != 0)
         {

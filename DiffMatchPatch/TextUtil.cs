@@ -96,7 +96,7 @@ internal static class TextUtil
         // Truncate the longer string.
         if (text1Length > text2Length)
         {
-            text1 = text1.Slice(text1Length - text2Length);
+            text1 = text1[(text1Length - text2Length)..];
         }
         else if (text1Length < text2Length)
         {
@@ -145,13 +145,13 @@ internal static class TextUtil
             {
                 bestCommon = shorttext.Slice(j - suffixLength, suffixLength).ToString() + shorttext.Slice(j, prefixLength).ToString();
                 bestLongtextA = longtext.Slice(0, i - suffixLength).ToString();
-                bestLongtextB = longtext.Slice(i + prefixLength).ToString();
+                bestLongtextB = longtext[(i + prefixLength)..].ToString();
                 bestShorttextA = shorttext.Slice(0, j - suffixLength).ToString();
-                bestShorttextB = shorttext.Slice(j + prefixLength).ToString();
+                bestShorttextB = shorttext[(j + prefixLength)..].ToString();
             }
         }
         return bestCommon.Length * 2 >= longtext.Length
-            ? new HalfMatchResult(bestLongtextA, bestLongtextB, bestShorttextA, bestShorttextB, bestCommon)
+            ? new(bestLongtextA, bestLongtextB, bestShorttextA, bestShorttextB, bestCommon)
             : HalfMatchResult.Empty;
     }
 
@@ -182,17 +182,17 @@ internal static class TextUtil
         if (hm1.IsEmpty && hm2.IsEmpty)
             return hm1;
 
-        HalfMatchResult hm;
-        if (hm2.IsEmpty)
-            hm = hm1;
-        else if (hm1.IsEmpty)
-            hm = hm2;
-        else
-            hm = hm1 > hm2 ? hm1 : hm2;
+        var hm = (hm1, hm2) switch
+        {
+            { hm2.IsEmpty: true } => hm1,
+            { hm1.IsEmpty: true } => hm2,
+            _ when hm1 > hm2 => hm1,
+            _ => hm2
+        };
 
         return text1.Length > text2.Length ? hm : hm.Reverse();
     }
-    private static readonly Regex HEXCODE = new Regex("%[0-9A-F][0-9A-F]");
+    private static readonly Regex HEXCODE = new("%[0-9A-F][0-9A-F]");
 
 
     /// <summary>
@@ -206,14 +206,14 @@ internal static class TextUtil
         int MAX_LENGTH = 0xFFEF;
         // C# throws a System.UriFormatException if string is too long.
         // Split the string into 64kb chunks.
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new();
         int index = 0;
         while (index + MAX_LENGTH < str.Length)
         {
             sb.Append(Uri.EscapeDataString(str.Substring(index, MAX_LENGTH)));
             index += MAX_LENGTH;
         }
-        sb.Append(Uri.EscapeDataString(str.Substring(index)));
+        sb.Append(Uri.EscapeDataString(str[index..]));
         // C# is overzealous in the replacements.  Walk back on a few.
         sb = sb.Replace('+', ' ').Replace("%20", " ").Replace("%21", "!")
             .Replace("%2A", "*").Replace("%27", "'").Replace("%28", "(")
@@ -226,10 +226,8 @@ internal static class TextUtil
         return HEXCODE.Replace(sb.ToString(), s => s.Value.ToLower());
     }
 
-    internal static string UrlDecoded(this string str)
-    {
-        return Uri.UnescapeDataString(str);
-    }
+    internal static string UrlDecoded(this string str) 
+        => Uri.UnescapeDataString(str);
 
     //  MATCH FUNCTIONS
 
