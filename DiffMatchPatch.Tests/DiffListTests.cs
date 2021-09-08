@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using System.Threading;
+
 using Xunit;
 
 namespace DiffMatchPatch.Tests
 {
-    
+
     public class DiffListTests
     {
         [Fact]
