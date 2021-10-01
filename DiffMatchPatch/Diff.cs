@@ -1,6 +1,6 @@
 namespace DiffMatchPatch;
 
-public record Diff(Operation Operation, string Text)
+public readonly record struct Diff(Operation Operation, string Text)
 {
     internal static Diff Create(Operation operation, string text) => new(operation, text);
     public static Diff Equal(ReadOnlySpan<char> text) => Create(Operation.Equal, text.ToString());

@@ -9,7 +9,7 @@ namespace DiffMatchPatch;
 /// <param name="PatchMargin">
 /// Chunk size for context length.
 /// </param>
-public record PatchSettings(float PatchDeleteThreshold, short PatchMargin)
+public readonly record struct PatchSettings(float PatchDeleteThreshold, short PatchMargin)
 {
     public static PatchSettings Default { get; } = new PatchSettings(0.5f, 4);
 }

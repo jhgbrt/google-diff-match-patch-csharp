@@ -26,7 +26,7 @@ public static class DiffList
         .Aggregate(new StringBuilder(), (sb, diff) => sb.Append(diff.Text))
         .ToString();
 
-    record LevenshteinState(int Insertions, int Deletions, int Levenshtein)
+    readonly record struct LevenshteinState(int Insertions, int Deletions, int Levenshtein)
     {
         public LevenshteinState Consolidate() => new(0, 0, Levenshtein + Math.Max(Insertions, Deletions));
     }
@@ -301,11 +301,11 @@ public static class DiffList
     }
 
 
-    record struct EditBetweenEqualities(string Equality1, string Edit, string Equality2)
+    readonly record struct EditBetweenEqualities(string Equality1, string Edit, string Equality2)
     {
         public int Score => DiffCleanupSemanticScore(Equality1, Edit) + DiffCleanupSemanticScore(Edit, Equality2);
 
-        record struct ScoreHelper(string Str, Index I, Regex Regex)
+        readonly record struct ScoreHelper(string Str, Index I, Regex Regex)
         {
             char C => Str[I];
             public bool IsEmpty => Str.Length == 0;

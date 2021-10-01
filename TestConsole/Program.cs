@@ -42,6 +42,6 @@ namespace TestConsole
             Console.WriteLine(record1 == record2);
         }
 
-        record MyRecord(ImmutableList<int> SomeList);
+        readonly record struct MyRecord(ImmutableList<int> SomeList);
     }
 }
