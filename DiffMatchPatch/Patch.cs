@@ -76,7 +76,7 @@ public record Patch(int Start1, int Length1, int Start2, int Length2, ImmutableL
         {
             var lastDiff = Diffs[^1];
             var extraLength = padding.Length - lastDiff.Text.Length;
-            var text = lastDiff.Text + padding.Substring(0, extraLength);
+            var text = lastDiff.Text + padding[..extraLength];
 
             builder.RemoveAt(builder.Count - 1);
             builder.Add(lastDiff.Replace(text));

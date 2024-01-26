@@ -4,21 +4,21 @@ namespace DiffMatchPatch;
  * https://en.wikipedia.org/wiki/Bitap_algorithm
  */
 
-internal class BitapAlgorithm
+/// <summary>
+/// Implements the Bitap algorithm, a text search algorithm that allows for approximate string matching.
+/// This class provides functionality to locate the best instance of a given pattern within a text string,
+/// accounting for potential mismatches and errors. The algorithm is configured through MatchSettings which
+/// includes match threshold and distance, determining the sensitivity and flexibility of the search.
+/// </summary>
+internal class BitapAlgorithm(MatchSettings settings)
 {
     // Cost of an empty edit operation in terms of edit characters.
     // At what point is no match declared (0.0 = perfection, 1.0 = very loose).
-    readonly float _matchThreshold;
+    readonly float _matchThreshold = settings.MatchThreshold;
     // How far to search for a match (0 = exact location, 1000+ = broad match).
     // A match this many characters away from the expected location will add
     // 1.0 to the score (0.0 is a perfect match).
-    readonly int _matchDistance;
-
-    public BitapAlgorithm(MatchSettings settings)
-    {
-        _matchThreshold = settings.MatchThreshold;
-        _matchDistance = settings.MatchDistance;
-    }
+    readonly int _matchDistance = settings.MatchDistance;
 
     /// <summary>
     /// Locate the best instance of 'pattern' in 'text' near 'loc' using the
@@ -55,28 +55,28 @@ internal class BitapAlgorithm
         var matchmask = 1 << (pattern.Length - 1);
         bestMatchIndex = -1;
 
-        int binMin, binMid;
-        var binMax = pattern.Length + text.Length;
-        var lastRd = Array.Empty<int>();
+        int currentMinRange, currentMidpoint;
+        var currentMaxRange = pattern.Length + text.Length;
+        var lastComputedRow = Array.Empty<int>();
         for (var d = 0; d < pattern.Length; d++)
         {
             // Scan for the best match; each iteration allows for one more error.
             // Run a binary search to determine how far from 'loc' we can stray at
             // this error level.
-            binMin = 0;
-            binMid = binMax;
-            while (binMin < binMid)
+            currentMinRange = 0;
+            currentMidpoint = currentMaxRange;
+            while (currentMinRange < currentMidpoint)
             {
-                if (MatchBitapScore(d, startIndex + binMid, startIndex, pattern) <= scoreThreshold)
-                    binMin = binMid;
+                if (MatchBitapScore(d, startIndex + currentMidpoint, startIndex, pattern) <= scoreThreshold)
+                    currentMinRange = currentMidpoint;
                 else
-                    binMax = binMid;
-                binMid = (binMax - binMin) / 2 + binMin;
+                    currentMaxRange = currentMidpoint;
+                currentMidpoint = (currentMaxRange - currentMinRange) / 2 + currentMinRange;
             }
             // Use the result from this iteration as the maximum for the next.
-            binMax = binMid;
-            var start = Math.Max(1, startIndex - binMid + 1);
-            var finish = Math.Min(startIndex + binMid, text.Length) + pattern.Length;
+            currentMaxRange = currentMidpoint;
+            var start = Math.Max(1, startIndex - currentMidpoint + 1);
+            var finish = Math.Min(startIndex + currentMidpoint, text.Length) + pattern.Length;
 
             var rd = new int[finish + 2];
             rd[finish + 1] = (1 << d) - 1;
@@ -94,7 +94,7 @@ internal class BitapAlgorithm
                     rd[j] = ((rd[j + 1] << 1) | 1) & charMatch;
                 else
                     // Subsequent passes: fuzzy match.
-                    rd[j] = ((rd[j + 1] << 1) | 1) & charMatch | ((lastRd[j + 1] | lastRd[j]) << 1) | 1 | lastRd[j + 1];
+                    rd[j] = ((rd[j + 1] << 1) | 1) & charMatch | ((lastComputedRow[j + 1] | lastComputedRow[j]) << 1) | 1 | lastComputedRow[j + 1];
 
                 if ((rd[j] & matchmask) != 0)
                 {
@@ -124,7 +124,7 @@ internal class BitapAlgorithm
                 // No hope for a (better) match at greater error levels.
                 break;
             }
-            lastRd = rd;
+            lastComputedRow = rd;
         }
         return bestMatchIndex;
     }
@@ -134,10 +134,14 @@ internal class BitapAlgorithm
     /// </summary>
     /// <param name="pattern"></param>
     /// <returns></returns>
-    public static Dictionary<char, int> InitAlphabet(string pattern)
+    internal static Dictionary<char, int> InitAlphabet(string pattern)
         => pattern
             .Select((c, i) => (c, i))
-            .Aggregate(new Dictionary<char, int>(), (d, x) => { d[x.c] = d.GetValueOrDefault(x.c) | (1 << (pattern.Length - x.i - 1)); return d; });
+            .Aggregate(new Dictionary<char, int>(), (d, x) =>
+            {
+                d[x.c] = d.GetValueOrDefault(x.c) | (1 << (pattern.Length - x.i - 1)); 
+                return d;
+            });
 
     /// <summary>
     /// Compute and return the score for a match with e errors and x location.
@@ -151,8 +155,12 @@ internal class BitapAlgorithm
     {
         var accuracy = (float)errors / pattern.Length;
         var proximity = Math.Abs(expectedLocation - location);
-        return _matchDistance == 0
-            ? proximity == 0 ? accuracy : 1.0
-            : accuracy + proximity / (float)_matchDistance;
+
+        return (_matchDistance, proximity) switch
+        {
+            (0, 0) => accuracy,
+            (0, _) => 1.0,
+            _ => accuracy + proximity / (float)_matchDistance
+        };
     }
 }

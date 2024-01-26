@@ -258,17 +258,23 @@ public static class DiffList
             var next = diffs[i + 1];
             if (previous.Operation == Equal && next.Operation == Equal)
             {
+                ReadOnlySpan<char> currentSpan = current.Text.AsSpan();
+                ReadOnlySpan<char> previousSpan = previous.Text.AsSpan();
+                ReadOnlySpan<char> nextSpan = next.Text.AsSpan();
+
                 // This is a single edit surrounded by equalities.
-                if (current.Text.EndsWith(previous.Text, StringComparison.Ordinal))
+                if (currentSpan.Length >= previousSpan.Length &&
+                    currentSpan[^previousSpan.Length..].SequenceEqual(previousSpan))
                 {
                     // Shift the edit over the previous equality.
-                    var text = previous.Text + current.Text.Substring(0, current.Text.Length - previous.Text.Length);
+                    var text = previous.Text + current.Text[..^previous.Text.Length];
                     diffs[i] = current.Replace(text);
                     diffs[i + 1] = next.Replace(previous.Text + next.Text);
                     diffs.Splice(i - 1, 1);
                     haschanges = true;
                 }
-                else if (current.Text.StartsWith(next.Text, StringComparison.Ordinal))
+                else if (currentSpan.Length >= nextSpan.Length &&
+                         currentSpan[..nextSpan.Length].SequenceEqual(nextSpan))
                 {
                     // Shift the edit over the next equality.
                     diffs[i - 1] = previous.Replace(previous.Text + next.Text);
@@ -337,8 +343,8 @@ public static class DiffList
             if (commonOffset > 0)
             {
                 var commonString = Edit[^commonOffset..];
-                var equality1 = Equality1.Substring(0, Equality1.Length - commonOffset);
-                var edit = commonString + Edit.Substring(0, Edit.Length - commonOffset);
+                var equality1 = Equality1[..^commonOffset];
+                var edit = commonString + Edit[..^commonOffset];
                 var equality2 = commonString + Equality2;
                 return this with { Equality1 = equality1, Edit = edit, Equality2 = equality2 };
             }

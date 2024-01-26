@@ -277,7 +277,7 @@ namespace DiffMatchPatch.Tests
         {
             var patches = Patch.Compute("", "");
             Assert.Equal("", patches.ToText());
-            var patches2 = patches.AddPadding(PatchList.NullPadding()).ToImmutableList();
+            var patches2 = patches.AddPadding(PatchList.NullPadding).ToImmutableList();
             Assert.Equal("", patches2.ToText());
         }
 
@@ -286,7 +286,7 @@ namespace DiffMatchPatch.Tests
         {
             var patches = Patch.Compute("", "test");
             Assert.Equal("@@ -0,0 +1,4 @@\n+test\n", patches.ToText());
-            var patches2 = patches.AddPadding(PatchList.NullPadding()).ToImmutableList();
+            var patches2 = patches.AddPadding(PatchList.NullPadding).ToImmutableList();
             Assert.Equal("@@ -1,8 +1,12 @@\n %01%02%03%04\n+test\n %01%02%03%04\n",
                 patches2.ToText());
         }
@@ -297,7 +297,7 @@ namespace DiffMatchPatch.Tests
             var patches = Patch.Compute("XY", "XtestY");
             Assert.Equal("@@ -1,2 +1,6 @@\n X\n+test\n Y\n",
                 patches.ToText());
-            var patches2 = patches.AddPadding(PatchList.NullPadding()).ToImmutableList();
+            var patches2 = patches.AddPadding(PatchList.NullPadding).ToImmutableList();
             Assert.Equal("@@ -2,8 +2,12 @@\n %02%03%04X\n+test\n Y%01%02%03\n",
                 patches2.ToText());
         }
@@ -308,7 +308,7 @@ namespace DiffMatchPatch.Tests
             var patches = Patch.Compute("XXXXYYYY", "XXXXtestYYYY");
             Assert.Equal("@@ -1,8 +1,12 @@\n XXXX\n+test\n YYYY\n",
                 patches.ToText());
-            var patches2 = patches.AddPadding(PatchList.NullPadding()).ToImmutableList();
+            var patches2 = patches.AddPadding(PatchList.NullPadding).ToImmutableList();
             Assert.Equal("@@ -5,8 +5,12 @@\n XXXX\n+test\n YYYY\n",
                 patches2.ToText());
         }

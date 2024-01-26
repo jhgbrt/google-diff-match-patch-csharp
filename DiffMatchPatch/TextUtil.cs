@@ -179,18 +179,16 @@ internal static class TextUtil
         // Check again based on the third quarter.
         var hm2 = HalfMatchI(longtext, shorttext, (longtext.Length + 1) / 2);
 
-        if (hm1.IsEmpty && hm2.IsEmpty)
-            return hm1;
-
         var hm = (hm1, hm2) switch
         {
+            { hm1.IsEmpty: true } and { hm2.IsEmpty: true } => hm1,
             { hm2.IsEmpty: true } => hm1,
             { hm1.IsEmpty: true } => hm2,
             _ when hm1 > hm2 => hm1,
             _ => hm2
         };
 
-        return text1.Length > text2.Length ? hm : hm.Reverse();
+        return text1.Length > text2.Length ? hm : -hm;
     }
     private static readonly Regex HEXCODE = new("%[0-9A-F][0-9A-F]");
 
@@ -226,8 +224,7 @@ internal static class TextUtil
         return HEXCODE.Replace(sb.ToString(), s => s.Value.ToLower());
     }
 
-    internal static string UrlDecoded(this string str) 
-        => Uri.UnescapeDataString(str);
+    internal static string UrlDecoded(this string str) => Uri.UnescapeDataString(str);
 
     //  MATCH FUNCTIONS
 
@@ -245,18 +242,22 @@ internal static class TextUtil
     internal static int FindBestMatchIndex(this string text, string pattern, int loc, MatchSettings settings)
     {
         loc = Math.Max(0, Math.Min(loc, text.Length));
+
+
+
         if (text == pattern)
         {
             // Shortcut (potentially not guaranteed by the algorithm)
             return 0;
         }
+        
         if (text.Length == 0)
         {
             // Nothing to match.
             return -1;
         }
         if (loc + pattern.Length <= text.Length
-            && text.Substring(loc, pattern.Length) == pattern)
+            && text.AsSpan(loc, pattern.Length).SequenceEqual(pattern))
         {
             // Perfect match at the perfect spot!  (Includes case of null pattern)
             return loc;

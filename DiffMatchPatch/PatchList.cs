@@ -5,7 +5,7 @@ namespace DiffMatchPatch;
 public static class PatchList
 {
 
-    internal static string NullPadding(short paddingLength = 4) => new(Enumerable.Range(1, paddingLength).Select(i => (char)i).ToArray());
+    internal static readonly string NullPadding = new(Enumerable.Range(1, 4).Select(i => (char)i).ToArray());
 
     /// <summary>
     /// Add some padding on text start and end so that edges can match something.
@@ -165,7 +165,7 @@ public static class PatchList
             return (text, new bool[0]);
         }
 
-        var nullPadding = NullPadding(settings.PatchMargin);
+        var nullPadding = NullPadding;
         text = nullPadding + text + nullPadding;
 
         var patches = input.AddPadding(nullPadding).SplitMax().ToList();
@@ -187,7 +187,7 @@ public static class PatchList
             {
                 // patch_splitMax will only provide an oversized pattern
                 // in the case of a monster delete.
-                startLoc = text.FindBestMatchIndex(text1.Substring(0, Constants.MatchMaxBits), expectedLoc, matchSettings);
+                startLoc = text.FindBestMatchIndex(text1[..Constants.MatchMaxBits], expectedLoc, matchSettings);
 
                 if (startLoc != -1)
                 {
@@ -231,7 +231,7 @@ public static class PatchList
                 if (text1 == text2)
                 {
                     // Perfect match, just shove the Replacement text in.
-                    text = text.Substring(0, startLoc) + aPatch.Diffs.Text2()
+                    text = text[..startLoc] + aPatch.Diffs.Text2()
                            + text[(startLoc + text1.Length)..];
                 }
                 else
@@ -277,8 +277,7 @@ public static class PatchList
             x++;
         }
         // Strip the padding off.
-        text = text.Substring(nullPadding.Length, text.Length
-                                                  - 2 * nullPadding.Length);
+        text = text.Substring(nullPadding.Length, text.Length - 2 * nullPadding.Length);
         return (text, results);
     }
 
@@ -310,6 +309,7 @@ public static class PatchList
                 // Create one of several smaller patches.
                 (int s1, int l1, int s2, int l2, List<Diff> thediffs)
                     = (start1 - precontext.Length, precontext.Length, start2 - precontext.Length, precontext.Length, new List<Diff>());
+
                 var empty = true;
 
                 if (precontext.Length != 0)
@@ -343,7 +343,7 @@ public static class PatchList
                     else
                     {
                         // Deletion or equality.  Only take as much as we can stomach.
-                        var cutoff = diffText.Substring(0, Math.Min(diffText.Length, patchSize - l1 - patchMargin));
+                        var cutoff = diffText[..Math.Min(diffText.Length, patchSize - l1 - patchMargin)];
                         l1 += cutoff.Length;
                         start1 += cutoff.Length;
                         if (diffType == Equal)
@@ -366,29 +366,26 @@ public static class PatchList
                         }
                     }
                 }
+                
                 // Compute the head context for the next patch.
                 precontext = thediffs.Text2();
+                
                 // if (thediffs.Text2() != precontext) throw new E
                 precontext = precontext[Math.Max(0, precontext.Length - patchMargin)..];
 
                 // Append the end context for this patch.
                 var text1 = diffs.Text1();
-                var postcontext = text1.Length > patchMargin ? text1.Substring(0, patchMargin) : text1;
+                var postcontext = text1.Length > patchMargin ? text1[..patchMargin] : text1;
 
                 if (postcontext.Length != 0)
                 {
                     l1 += postcontext.Length;
                     l2 += postcontext.Length;
-
                     var lastDiff = thediffs.Last();
-                    if (thediffs.Any() && lastDiff.Operation == Equal)
-                    {
+                    if (thediffs.Count > 0 && lastDiff.Operation == Equal)
                         thediffs[^1] = lastDiff.Append(postcontext);
-                    }
                     else
-                    {
                         thediffs.Add(Diff.Equal(postcontext));
-                    }
                 }
                 if (!empty)
                 {

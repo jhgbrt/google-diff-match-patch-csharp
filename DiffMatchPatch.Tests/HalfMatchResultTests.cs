@@ -7,12 +7,9 @@ namespace DiffMatchPatch.Tests
         [Fact]
         public void HalfMatchResult_Reverse_ReversesPrefixAndSuffix()
         {
-            var r = new HalfMatchResult("p1", "s1", "p2", "s2", "m").Reverse();
-            Assert.Equal("p1", r.Prefix2);
-            Assert.Equal("s1", r.Suffix2);
-            Assert.Equal("p2", r.Prefix1);
-            Assert.Equal("s2", r.Suffix1);
-            Assert.Equal("m", r.CommonMiddle);
+            var r = -new HalfMatchResult("p1", "s1", "p2", "s2", "m");
+            Assert.Equal(new("p2", "s2", "p1", "s1", "m"), r);
+            Assert.Equal(r, -(-r));
         }
         [Fact]
         public void HalfMatchResult_IsEmpty_WhenCommonMiddleNotEmpty_ReturnsFalse()
