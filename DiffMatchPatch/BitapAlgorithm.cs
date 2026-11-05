@@ -4,6 +4,8 @@ namespace DiffMatchPatch;
  * https://en.wikipedia.org/wiki/Bitap_algorithm
  */
 
+using System.Buffers;
+
 /// <summary>
 /// Implements the Bitap algorithm, a text search algorithm that allows for approximate string matching.
 /// This class provides functionality to locate the best instance of a given pattern within a text string,
@@ -58,73 +60,83 @@ internal class BitapAlgorithm(MatchSettings settings)
         int currentMinRange, currentMidpoint;
         var currentMaxRange = pattern.Length + text.Length;
         var lastComputedRow = Array.Empty<int>();
-        for (var d = 0; d < pattern.Length; d++)
+        var rd = ArrayPool<int>.Shared;
+        try
         {
-            // Scan for the best match; each iteration allows for one more error.
-            // Run a binary search to determine how far from 'loc' we can stray at
-            // this error level.
-            currentMinRange = 0;
-            currentMidpoint = currentMaxRange;
-            while (currentMinRange < currentMidpoint)
+            for (var d = 0; d < pattern.Length; d++)
             {
-                if (MatchBitapScore(d, startIndex + currentMidpoint, startIndex, pattern) <= scoreThreshold)
-                    currentMinRange = currentMidpoint;
-                else
-                    currentMaxRange = currentMidpoint;
-                currentMidpoint = (currentMaxRange - currentMinRange) / 2 + currentMinRange;
-            }
-            // Use the result from this iteration as the maximum for the next.
-            currentMaxRange = currentMidpoint;
-            var start = Math.Max(1, startIndex - currentMidpoint + 1);
-            var finish = Math.Min(startIndex + currentMidpoint, text.Length) + pattern.Length;
-
-            var rd = new int[finish + 2];
-            rd[finish + 1] = (1 << d) - 1;
-            for (var j = finish; j >= start; j--)
-            {
-                int charMatch;
-                if (text.Length <= j - 1 || !s.ContainsKey(text[j - 1]))
-                    // Out of range.
-                    charMatch = 0;
-                else
-                    charMatch = s[text[j - 1]];
-
-                if (d == 0)
-                    // First pass: exact match.
-                    rd[j] = ((rd[j + 1] << 1) | 1) & charMatch;
-                else
-                    // Subsequent passes: fuzzy match.
-                    rd[j] = ((rd[j + 1] << 1) | 1) & charMatch | ((lastComputedRow[j + 1] | lastComputedRow[j]) << 1) | 1 | lastComputedRow[j + 1];
-
-                if ((rd[j] & matchmask) != 0)
+                // Scan for the best match; each iteration allows for one more error.
+                // Run a binary search to determine how far from 'loc' we can stray at
+                // this error level.
+                currentMinRange = 0;
+                currentMidpoint = currentMaxRange;
+                while (currentMinRange < currentMidpoint)
                 {
-                    var score = MatchBitapScore(d, j - 1, startIndex, pattern);
-                    // This match will almost certainly be better than any existing
-                    // match.  But check anyway.
-                    if (score <= scoreThreshold)
+                    if (MatchBitapScore(d, startIndex + currentMidpoint, startIndex, pattern) <= scoreThreshold)
+                        currentMinRange = currentMidpoint;
+                    else
+                        currentMaxRange = currentMidpoint;
+                    currentMidpoint = (currentMaxRange - currentMinRange) / 2 + currentMinRange;
+                }
+                // Use the result from this iteration as the maximum for the next.
+                currentMaxRange = currentMidpoint;
+                var start = Math.Max(1, startIndex - currentMidpoint + 1);
+                var finish = Math.Min(startIndex + currentMidpoint, text.Length) + pattern.Length;
+
+                var row = rd.Rent(finish + 2);
+                // Pooled arrays are not zeroed; cells outside [start, finish] must read as 0
+                // (as with a fresh array) because the next error level reads them.
+                Array.Clear(row, 0, finish + 2);
+                row[finish + 1] = (1 << d) - 1;
+                for (var j = finish; j >= start; j--)
+                {
+                    // Out of range or not in the pattern => 0.
+                    var charMatch = text.Length > j - 1 && s.TryGetValue(text[j - 1], out var m) ? m : 0;
+
+                    if (d == 0)
+                        // First pass: exact match.
+                        row[j] = ((row[j + 1] << 1) | 1) & charMatch;
+                    else
+                        // Subsequent passes: fuzzy match.
+                        row[j] = ((row[j + 1] << 1) | 1) & charMatch | ((lastComputedRow[j + 1] | lastComputedRow[j]) << 1) | 1 | lastComputedRow[j + 1];
+
+                    if ((row[j] & matchmask) != 0)
                     {
-                        // Told you so.
-                        scoreThreshold = score;
-                        bestMatchIndex = j - 1;
-                        if (bestMatchIndex > startIndex)
+                        var score = MatchBitapScore(d, j - 1, startIndex, pattern);
+                        // This match will almost certainly be better than any existing
+                        // match.  But check anyway.
+                        if (score <= scoreThreshold)
                         {
-                            // When passing loc, don't exceed our current distance from loc.
-                            start = Math.Max(1, 2 * startIndex - bestMatchIndex);
-                        }
-                        else
-                        {
-                            // Already passed loc, downhill from here on in.
-                            break;
+                            // Told you so.
+                            scoreThreshold = score;
+                            bestMatchIndex = j - 1;
+                            if (bestMatchIndex > startIndex)
+                            {
+                                // When passing loc, don't exceed our current distance from loc.
+                                start = Math.Max(1, 2 * startIndex - bestMatchIndex);
+                            }
+                            else
+                            {
+                                // Already passed loc, downhill from here on in.
+                                break;
+                            }
                         }
                     }
                 }
+                if (lastComputedRow.Length > 0)
+                    rd.Return(lastComputedRow);
+                lastComputedRow = row;
+                if (MatchBitapScore(d + 1, startIndex, startIndex, pattern) > scoreThreshold)
+                {
+                    // No hope for a (better) match at greater error levels.
+                    break;
+                }
             }
-            if (MatchBitapScore(d + 1, startIndex, startIndex, pattern) > scoreThreshold)
-            {
-                // No hope for a (better) match at greater error levels.
-                break;
-            }
-            lastComputedRow = rd;
+        }
+        finally
+        {
+            if (lastComputedRow.Length > 0)
+                rd.Return(lastComputedRow);
         }
         return bestMatchIndex;
     }
@@ -135,13 +147,15 @@ internal class BitapAlgorithm(MatchSettings settings)
     /// <param name="pattern"></param>
     /// <returns></returns>
     internal static Dictionary<char, int> InitAlphabet(string pattern)
-        => pattern
-            .Select((c, i) => (c, i))
-            .Aggregate(new Dictionary<char, int>(), (d, x) =>
-            {
-                d[x.c] = d.GetValueOrDefault(x.c) | (1 << (pattern.Length - x.i - 1)); 
-                return d;
-            });
+    {
+        var d = new Dictionary<char, int>();
+        for (var i = 0; i < pattern.Length; i++)
+        {
+            var c = pattern[i];
+            d[c] = d.GetValueOrDefault(c) | (1 << (pattern.Length - i - 1));
+        }
+        return d;
+    }
 
     /// <summary>
     /// Compute and return the score for a match with e errors and x location.

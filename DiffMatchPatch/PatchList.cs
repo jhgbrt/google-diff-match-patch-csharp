@@ -5,7 +5,7 @@ namespace DiffMatchPatch;
 public static class PatchList
 {
 
-    internal static readonly string NullPadding = new(Enumerable.Range(1, 4).Select(i => (char)i).ToArray());
+    internal static readonly string NullPadding = "\x01\x02\x03\x04";
 
     /// <summary>
     /// Add some padding on text start and end so that edges can match something.
@@ -53,7 +53,13 @@ public static class PatchList
     /// </summary>
     /// <param name="patches"></param>
     /// <returns></returns>
-    public static string ToText(this IEnumerable<Patch> patches) => patches.Aggregate(new StringBuilder(), (sb, patch) => sb.Append(patch)).ToString();
+    public static string ToText(this IEnumerable<Patch> patches)
+    {
+        var sb = new StringBuilder();
+        foreach (var patch in patches)
+            sb.Append(patch);
+        return sb.ToString();
+    }
 
     static readonly Regex PatchHeader = new("^@@ -(\\d+),?(\\d*) \\+(\\d+),?(\\d*) @@$");
 
@@ -238,7 +244,7 @@ public static class PatchList
                 {
                     // Imperfect match.  Run a diff to get a framework of equivalent
                     // indices.
-                    var diffs = Diff.Compute(text1, text2, 0f, false);
+                    var diffs = Diff.Compute(text1, text2, 0f, false).ToImmutableList();
                     if (text1.Length > Constants.MatchMaxBits
                         && diffs.Levenshtein() / (float)text1.Length
                         > settings.PatchDeleteThreshold)
@@ -362,7 +368,7 @@ public static class PatchList
                         }
                         else
                         {
-                            diffs = diffs.RemoveAt(0).Insert(0, first with { Text = first.Text[cutoff.Length..] });
+                            diffs = diffs.RemoveAt(0).Insert(0, first.Replace(first.Text[cutoff.Length..]));
                         }
                     }
                 }

@@ -3,6 +3,20 @@ namespace DiffMatchPatch;
 internal static class TextUtil
 {
     /// <summary>
+    /// Ordinal (content-based) hash of a span of characters (FNV-1a).
+    /// </summary>
+    internal static int OrdinalHash(ReadOnlySpan<char> span)
+    {
+        unchecked
+        {
+            var hash = (int)2166136261;
+            foreach (var c in span)
+                hash = (hash ^ c) * 16777619;
+            return hash;
+        }
+    }
+
+    /// <summary>
     /// Determine the common prefix of two strings as the number of characters common to the start of each string.
     /// </summary>
     /// <param name="text1"></param>
@@ -125,34 +139,54 @@ internal static class TextUtil
     /// <param name="shorttext">Shorter string.</param>
     /// <param name="i">Start index of quarter length Substring within longtext.</param>
     /// <returns></returns>
-    private static HalfMatchResult HalfMatchI(ReadOnlySpan<char> longtext, ReadOnlySpan<char> shorttext, int i)
+    private static HalfMatchResult HalfMatchI(StringSlice longtext, StringSlice shorttext, int i)
     {
-        // Start with a 1/4 length Substring at position i as a seed.
-        var seed = longtext.Slice(i, longtext.Length / 4);
+        var longtextSpan = longtext.Span;
+        var shorttextSpan = shorttext.Span;
+        var seed = longtextSpan.Slice(i, longtextSpan.Length / 4);
         var j = -1;
 
-        var bestCommon = string.Empty;
-        string bestLongtextA = string.Empty, bestLongtextB = string.Empty;
-        string bestShorttextA = string.Empty, bestShorttextB = string.Empty;
+        var bestCommonLength = 0;
+        int bestLongtextAStart = 0, bestLongtextALength = 0;
+        int bestLongtextBStart = 0, bestLongtextBLength = 0;
+        int bestShorttextAStart = 0, bestShorttextALength = 0;
+        int bestShorttextBStart = 0, bestShorttextBLength = 0;
+        int bestShorttextCommonStart = 0, bestShorttextCommonLength = 0;
 
         int n = j;
-        while (n < shorttext.Length && (j = shorttext[(j + 1)..].IndexOf(seed, StringComparison.Ordinal)) != -1)
+        while (n < shorttextSpan.Length && (j = shorttextSpan[(j + 1)..].IndexOf(seed, StringComparison.Ordinal)) != -1)
         {
             j = n = j + n + 1;
-            var prefixLength = CommonPrefix(longtext, shorttext, i, j);
-            var suffixLength = CommonSuffix(longtext, shorttext, i, j);
-            if (bestCommon.Length < suffixLength + prefixLength)
+            var prefixLength = CommonPrefix(longtextSpan, shorttextSpan, i, j);
+            var suffixLength = CommonSuffix(longtextSpan, shorttextSpan, i, j);
+            var totalCommon = suffixLength + prefixLength;
+            if (bestCommonLength < totalCommon)
             {
-                bestCommon = shorttext.Slice(j - suffixLength, suffixLength).ToString() + shorttext.Slice(j, prefixLength).ToString();
-                bestLongtextA = longtext.Slice(0, i - suffixLength).ToString();
-                bestLongtextB = longtext[(i + prefixLength)..].ToString();
-                bestShorttextA = shorttext.Slice(0, j - suffixLength).ToString();
-                bestShorttextB = shorttext[(j + prefixLength)..].ToString();
+                bestCommonLength = totalCommon;
+                bestLongtextAStart = 0;
+                bestLongtextALength = i - suffixLength;
+                bestLongtextBStart = i + prefixLength;
+                bestLongtextBLength = longtextSpan.Length - bestLongtextBStart;
+                bestShorttextAStart = 0;
+                bestShorttextALength = j - suffixLength;
+                bestShorttextBStart = j + prefixLength;
+                bestShorttextBLength = shorttextSpan.Length - bestShorttextBStart;
+                bestShorttextCommonStart = j - suffixLength;
+                bestShorttextCommonLength = suffixLength + prefixLength;
             }
         }
-        return bestCommon.Length * 2 >= longtext.Length
-            ? new(bestLongtextA, bestLongtextB, bestShorttextA, bestShorttextB, bestCommon)
-            : HalfMatchResult.Empty;
+
+        if (bestCommonLength * 2 >= longtextSpan.Length)
+        {
+            return new HalfMatchResult(
+                longtext.Slice(bestLongtextAStart, bestLongtextALength),
+                longtext.Slice(bestLongtextBStart, bestLongtextBLength),
+                shorttext.Slice(bestShorttextAStart, bestShorttextALength),
+                shorttext.Slice(bestShorttextBStart, bestShorttextBLength),
+                shorttext.Slice(bestShorttextCommonStart, bestShorttextCommonLength)
+            );
+        }
+        return HalfMatchResult.Empty;
     }
 
 
@@ -165,7 +199,7 @@ internal static class TextUtil
     /// <param name="text2"></param>
     /// <returns>Data structure containing the prefix and suffix of string1, 
     /// the prefix and suffix of string 2, and the common middle. Null if there was no match.</returns>
-    internal static HalfMatchResult HalfMatch(ReadOnlySpan<char> text1, ReadOnlySpan<char> text2)
+    internal static HalfMatchResult HalfMatch(StringSlice text1, StringSlice text2)
     {
         var longtext = text1.Length > text2.Length ? text1 : text2;
         var shorttext = text1.Length > text2.Length ? text2 : text1;
@@ -202,16 +236,15 @@ internal static class TextUtil
         // TODO verify if this is the right way (probably should use HttpUtility here)
 
         int MAX_LENGTH = 0xFFEF;
-        // C# throws a System.UriFormatException if string is too long.
-        // Split the string into 64kb chunks.
         StringBuilder sb = new();
         int index = 0;
+        var span = str.AsSpan();
         while (index + MAX_LENGTH < str.Length)
         {
-            sb.Append(Uri.EscapeDataString(str.Substring(index, MAX_LENGTH)));
+            sb.Append(Uri.EscapeDataString(span.Slice(index, MAX_LENGTH).ToString()));
             index += MAX_LENGTH;
         }
-        sb.Append(Uri.EscapeDataString(str[index..]));
+        sb.Append(Uri.EscapeDataString(span[index..].ToString()));
         // C# is overzealous in the replacements.  Walk back on a few.
         sb = sb.Replace('+', ' ').Replace("%20", " ").Replace("%21", "!")
             .Replace("%2A", "*").Replace("%27", "'").Replace("%28", "(")

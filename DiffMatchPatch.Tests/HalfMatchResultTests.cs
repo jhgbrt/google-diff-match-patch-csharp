@@ -1,4 +1,4 @@
-﻿using Xunit;
+using Xunit;
 
 namespace DiffMatchPatch.Tests
 {
@@ -26,8 +26,8 @@ namespace DiffMatchPatch.Tests
         [Fact]
         public void HalfMatchResult_LargerThan_SmallerThan()
         {
-            var r1 = HalfMatchResult.Empty with { CommonMiddle = "abc" };
-            var r2 = HalfMatchResult.Empty with { CommonMiddle = "abcd" };
+            var r1 = new HalfMatchResult("", "", "", "", "abc");
+            var r2 = new HalfMatchResult("", "", "", "", "abcd");
             Assert.True(r2 > r1);
             Assert.True(r1 < r2);
         }

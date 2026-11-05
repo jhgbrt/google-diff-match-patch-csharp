@@ -143,7 +143,7 @@ public record Patch(int Start1, int Length1, int Start2, int Length2, ImmutableL
         using var cts = diffTimeout <= 0
             ? new CancellationTokenSource()
             : new CancellationTokenSource(TimeSpan.FromSeconds(diffTimeout));
-        return Compute(text1, DiffAlgorithm.Compute(text1, text2, true, true, cts.Token).CleanupSemantic().CleanupEfficiency(diffEditCost)).ToImmutableList().WithValueSemantics();
+        return Compute(text1, DiffAlgorithm.Compute(new StringSlice(text1), new StringSlice(text2), true, diffTimeout > 0, cts.Token).CleanupSemantic().CleanupEfficiency(diffEditCost)).ToImmutableList().WithValueSemantics();
     }
 
     /// <summary>
@@ -163,9 +163,10 @@ public record Patch(int Start1, int Length1, int Start2, int Length2, ImmutableL
     /// <param name="diffs"></param>
     /// <param name="patchMargin"></param>
     /// <returns></returns>
-    public static IEnumerable<Patch> Compute(string text1, IEnumerable<Diff> diffs, short patchMargin = 4)
+    public static IEnumerable<Patch> Compute(string text1, IEnumerable<Diff> input, short patchMargin = 4)
     {
-        if (!diffs.Any())
+        var diffs = input as IReadOnlyList<Diff> ?? input.ToList();
+        if (diffs.Count == 0)
         {
             yield break;  // Get rid of the null case.
         }
@@ -176,12 +177,13 @@ public record Patch(int Start1, int Length1, int Start2, int Length2, ImmutableL
                              // text2 (postpatch_text). We recreate the patches one by one to determine
                              // context info.
         var prepatchText = text1;
-        var postpatchText = text1;
+        var postpatchText = new StringBuilder(text1);
         var newdiffs = ImmutableList.CreateBuilder<Diff>();
         int start1 = 0, length1 = 0, start2 = 0, length2 = 0;
-        foreach (var aDiff in diffs)
+        for (var index = 0; index < diffs.Count; index++)
         {
-            if (!newdiffs.Any() && aDiff.Operation != Equal)
+            var aDiff = diffs[index];
+            if (newdiffs.Count == 0 && aDiff.Operation != Equal)
             {
                 // A new patch starts here.
                 start1 = charCount1;
@@ -192,27 +194,27 @@ public record Patch(int Start1, int Length1, int Start2, int Length2, ImmutableL
             {
                 case Insert:
                     newdiffs.Add(aDiff);
-                    length2 += aDiff.Text.Length;
-                    postpatchText = postpatchText.Insert(charCount2, aDiff.Text);
+                    length2 += aDiff.TextLength;
+                    postpatchText.Insert(charCount2, aDiff.Text);
                     break;
                 case Delete:
-                    length1 += aDiff.Text.Length;
+                    length1 += aDiff.TextLength;
                     newdiffs.Add(aDiff);
-                    postpatchText = postpatchText.Remove(charCount2, aDiff.Text.Length);
+                    postpatchText.Remove(charCount2, aDiff.TextLength);
                     break;
                 case Equal:
-                    if (aDiff.Text.Length <= 2 * patchMargin && newdiffs.Any() && aDiff != diffs.Last())
+                    if (aDiff.TextLength <= 2 * patchMargin && newdiffs.Count > 0 && index != diffs.Count - 1)
                     {
                         // Small equality inside a patch.
                         newdiffs.Add(aDiff);
-                        length1 += aDiff.Text.Length;
-                        length2 += aDiff.Text.Length;
+                        length1 += aDiff.TextLength;
+                        length2 += aDiff.TextLength;
                     }
 
-                    if (aDiff.Text.Length >= 2 * patchMargin)
+                    if (aDiff.TextLength >= 2 * patchMargin)
                     {
                         // Time for a new patch.
-                        if (newdiffs.Any())
+                        if (newdiffs.Count > 0)
                         {
                             (start1, length1, start2, length2) = newdiffs.AddContext(prepatchText, start1, length1, start2, length2);
                             yield return new Patch(start1, length1, start2, length2, newdiffs.ToImmutable());
@@ -222,7 +224,7 @@ public record Patch(int Start1, int Length1, int Start2, int Length2, ImmutableL
                             // http://code.google.com/p/google-diff-match-patch/wiki/Unidiff
                             // Update prepatch text & pos to reflect the application of the
                             // just completed patch.
-                            prepatchText = postpatchText;
+                            prepatchText = postpatchText.ToString();
                             charCount1 = charCount2;
                         }
                     }
@@ -232,15 +234,15 @@ public record Patch(int Start1, int Length1, int Start2, int Length2, ImmutableL
             // Update the current character count.
             if (aDiff.Operation != Insert)
             {
-                charCount1 += aDiff.Text.Length;
+                charCount1 += aDiff.TextLength;
             }
             if (aDiff.Operation != Delete)
             {
-                charCount2 += aDiff.Text.Length;
+                charCount2 += aDiff.TextLength;
             }
         }
         // Pick up the leftover patch if not empty.
-        if (newdiffs.Any())
+        if (newdiffs.Count > 0)
         {
             (start1, length1, start2, length2) = newdiffs.AddContext(prepatchText, start1, length1, start2, length2);
             yield return new Patch(start1, length1, start2, length2, newdiffs.ToImmutable());

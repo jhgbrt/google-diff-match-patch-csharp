@@ -34,7 +34,14 @@ class LineToCharCompressor
     /// <param name="text"></param>
     /// <returns></returns>
     public string Decompress(string text)
-        => text.Aggregate(new StringBuilder(), (sb, c) => sb.Append(this[c])).Append(text.Length == char.MaxValue ? this[char.MaxValue] : "").ToString();
+    {
+        var sb = new StringBuilder();
+        foreach (var c in text)
+            sb.Append(this[c]);
+        if (text.Length == char.MaxValue)
+            sb.Append(this[char.MaxValue]);
+        return sb.ToString();
+    }
 
     // e.g. _lineArray[4] == "Hello\n"
     // e.g. _lineHash["Hello\n"] == 4

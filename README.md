@@ -42,7 +42,7 @@ See also the unit tests but here are some typical scenarios:
 
 Computing a list of diffs from 2 strings:
 
-    List<Diff> diffs = Diff.Compute(text1, text2);
+    DiffResult diffs = Diff.Compute(text1, text2); // an immutable IReadOnlyList<Diff>
 
 Generating a list of patches from a list of diffs:
 

@@ -1,8 +1,9 @@
-﻿using DiffMatchPatch;
+using DiffMatchPatch;
 
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 namespace System.Runtime.CompilerServices
 {
@@ -14,6 +15,12 @@ namespace TestConsole
     {
         static void Main(string[] args)
         {
+            if (args.Length > 0 && args[0] == "--profile")
+            {
+                RunProfile();
+                return;
+            }
+
             var diffs = new List<Diff>
             {
                 Diff.Insert(" "),
@@ -40,6 +47,35 @@ namespace TestConsole
             var record2 = new MyRecord(someList);
 
             Console.WriteLine(record1 == record2);
+        }
+
+        static void RunProfile()
+        {
+            var baseDir = AppContext.BaseDirectory;
+            // Navigate up from bin/Release/net10.0 to the repo root, then into DiffMatchPatch.PerformanceTest
+            var repoRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
+            string text1 = File.ReadAllText(Path.Combine(repoRoot, "DiffMatchPatch.PerformanceTest", "Speedtest1.txt"));
+            string text2 = File.ReadAllText(Path.Combine(repoRoot, "DiffMatchPatch.PerformanceTest", "Speedtest2.txt"));
+
+            // Warmup
+            var warmup = Diff.Compute(text1, text2, 5);
+            warmup.MakeHumanReadable();
+            warmup.OptimizeForMachineProcessing();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            // Actual profiled run - 10 iterations to amplify signal
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 10; i++)
+            {
+                var diff = Diff.Compute(text1, text2, 5);
+                diff.MakeHumanReadable();
+                diff.OptimizeForMachineProcessing();
+            }
+            long after = GC.GetAllocatedBytesForCurrentThread();
+
+            Console.WriteLine($"Allocated {(after - before) / 1024.0 / 1024.0:F2} MB across 10 iterations ({(after - before) / 10 / 1024.0 / 1024.0:F2} MB/iteration)");
         }
 
         readonly record struct MyRecord(ImmutableList<int> SomeList);

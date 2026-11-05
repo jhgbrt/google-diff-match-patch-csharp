@@ -1,4 +1,4 @@
-﻿namespace DiffMatchPatch;
+namespace DiffMatchPatch;
 
 internal static class DiffListBuilder
 {
@@ -27,14 +27,14 @@ internal static class DiffListBuilder
         {
             padding += patchMargin;
             var begin = Math.Max(0, start2 - padding);
-            pattern = text[begin..Math.Min(text.Length, start2 + length1 + padding)];
+            pattern = text.Substring(begin, Math.Min(text.Length, start2 + length1 + padding) - begin);
         }
         // Add one chunk for good luck.
         padding += patchMargin;
 
         // Add the prefix.
         var begin1 = Math.Max(0, start2 - padding);
-        var prefix = text[begin1..start2];
+        var prefix = text.AsSpan(begin1, start2 - begin1);
         if (prefix.Length != 0)
         {
             diffListBuilder.Insert(0, Diff.Equal(prefix));
@@ -42,7 +42,7 @@ internal static class DiffListBuilder
         // Add the suffix.
         var begin2 = start2 + length1;
         var length = Math.Min(text.Length, start2 + length1 + padding) - begin2;
-        var suffix = text.Substring(begin2, length);
+        var suffix = text.AsSpan(begin2, length);
         if (suffix.Length != 0)
         {
             diffListBuilder.Add(Diff.Equal(suffix));

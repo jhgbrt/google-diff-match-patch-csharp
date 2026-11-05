@@ -1,10 +1,10 @@
 namespace DiffMatchPatch;
 
-internal readonly record struct HalfMatchResult(string Prefix1, string Suffix1, string Prefix2, string Suffix2, string CommonMiddle)
+internal readonly record struct HalfMatchResult(StringSlice Prefix1, StringSlice Suffix1, StringSlice Prefix2, StringSlice Suffix2, StringSlice CommonMiddle)
 {
-    public bool IsEmpty => string.IsNullOrEmpty(CommonMiddle);
+    public bool IsEmpty => CommonMiddle.Length == 0;
 
-    public static readonly HalfMatchResult Empty = new(string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
+    public static readonly HalfMatchResult Empty = default;
 
     public static bool operator >(HalfMatchResult left, HalfMatchResult right) => left.CommonMiddle.Length > right.CommonMiddle.Length;
 
