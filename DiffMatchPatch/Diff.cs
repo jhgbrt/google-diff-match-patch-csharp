@@ -22,8 +22,6 @@ public readonly record struct Diff(Operation Operation, string Text)
 
     internal Diff Append(string text) => this with { Text = Text + text };
 
-    internal Diff Prepend(string text) => this with { Text = text + Text };
-
     public bool IsEmpty => TextLength == 0;
 
     /// <summary>
@@ -51,7 +49,11 @@ public readonly record struct Diff(Operation Operation, string Text)
     }
 
     public static DiffResult Compute(string text1, string text2, bool checkLines, bool optimizeForSpeed, CancellationToken token)
-        => new DiffResult(DiffAlgorithm.Compute(new StringSlice(text1), new StringSlice(text2), checkLines, optimizeForSpeed, token));
+    {
+        using var engine = new DiffEngine(text1, text2, optimizeForSpeed, token);
+        engine.Compute(checkLines);
+        return new DiffResult(engine.ToImmutableArray(), text1, text2);
+    }
 
     public bool IsLargeDelete(int size) => Operation == Operation.Delete && TextLength > size;
 }

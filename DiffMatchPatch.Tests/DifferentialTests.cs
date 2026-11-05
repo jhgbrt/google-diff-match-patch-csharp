@@ -89,6 +89,8 @@ namespace DiffMatchPatch.Tests
             { "ab", 40 },
             { "abc \n", 300 },
             { "abcdefghij\n", 2000 },
+            // whitespace, line breaks and punctuation exercise the semantic scoring
+            { "ab \r\n\t.,", 400 },
         };
 
         [Theory]

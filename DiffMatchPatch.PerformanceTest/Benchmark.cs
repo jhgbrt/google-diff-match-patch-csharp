@@ -11,12 +11,24 @@ namespace DiffMatchPatch.Benchmark
         private string _text1 = null!;
         private string _text2 = null!;
 
+        private DiffResult _diffs;
+
         [GlobalSetup]
         public void Setup()
         {
             _text1 = File.ReadAllText("Speedtest1.txt");
             _text2 = File.ReadAllText("Speedtest2.txt");
+            _diffs = Diff.Compute(_text1, _text2, 5);
         }
+
+        [Benchmark]
+        public object MakeHumanReadable() => _diffs.MakeHumanReadable();
+
+        [Benchmark]
+        public object OptimizeForMachineProcessing() => _diffs.OptimizeForMachineProcessing();
+
+        [Benchmark]
+        public object PatchCompute() => Patch.Compute(_text1, _text2, 5);
 
         [Benchmark]
         public void ComputeDiff()

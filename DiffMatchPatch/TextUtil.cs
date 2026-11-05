@@ -39,18 +39,6 @@ internal static class TextUtil
         return n;
     }
 
-    internal static int CommonPrefix(StringBuilder text1, StringBuilder text2)
-    {
-        var n = Math.Min(text1.Length, text2.Length);
-        for (var i = 0; i < n; i++)
-        {
-            if (text1[i] != text2[i])
-            {
-                return i;
-            }
-        }
-        return n;
-    }
     /// <summary>
     /// Determine the common suffix of two strings as the number of characters common to the end of each string.
     /// </summary>
@@ -63,20 +51,6 @@ internal static class TextUtil
     {
         var text1Length = l1 ?? text1.Length;
         var text2Length = l2 ?? text2.Length;
-        var n = Math.Min(text1Length, text2Length);
-        for (var i = 1; i <= n; i++)
-        {
-            if (text1[text1Length - i] != text2[text2Length - i])
-            {
-                return i - 1;
-            }
-        }
-        return n;
-    }
-    internal static int CommonSuffix(StringBuilder text1, StringBuilder text2)
-    {
-        var text1Length = text1.Length;
-        var text2Length = text2.Length;
         var n = Math.Min(text1Length, text2Length);
         for (var i = 1; i <= n; i++)
         {
@@ -224,38 +198,79 @@ internal static class TextUtil
 
         return text1.Length > text2.Length ? hm : -hm;
     }
-    private static readonly Regex HEXCODE = new("%[0-9A-F][0-9A-F]");
 
 
     /// <summary>
     ///  Encodes a string with URI-style % escaping.
     /// Compatible with JavaScript's encodeURI function.
     /// </summary>
-    internal static string UrlEncoded(this string str)
+    internal static string UrlEncoded(this string str) => new StringBuilder(str.Length).AppendUrlEncoded(str.AsSpan()).ToString();
+
+    private const string HexDigits = "0123456789abcdef";
+
+    /// <summary>
+    /// Append text with %xx (UTF-8, lowercase hex) escaping, compatible with JavaScript's encodeURI:
+    /// letters, digits and <c>-_.~ !*'();/?:@&amp;=+$,#</c> are not escaped.
+    /// Unpaired surrogates are encoded as U+FFFD.
+    /// </summary>
+    internal static StringBuilder AppendUrlEncoded(this StringBuilder sb, ReadOnlySpan<char> text)
     {
-        // TODO verify if this is the right way (probably should use HttpUtility here)
-
-        int MAX_LENGTH = 0xFFEF;
-        StringBuilder sb = new();
-        int index = 0;
-        var span = str.AsSpan();
-        while (index + MAX_LENGTH < str.Length)
+        for (var i = 0; i < text.Length; i++)
         {
-            sb.Append(Uri.EscapeDataString(span.Slice(index, MAX_LENGTH).ToString()));
-            index += MAX_LENGTH;
-        }
-        sb.Append(Uri.EscapeDataString(span[index..].ToString()));
-        // C# is overzealous in the replacements.  Walk back on a few.
-        sb = sb.Replace('+', ' ').Replace("%20", " ").Replace("%21", "!")
-            .Replace("%2A", "*").Replace("%27", "'").Replace("%28", "(")
-            .Replace("%29", ")").Replace("%3B", ";").Replace("%2F", "/")
-            .Replace("%3F", "?").Replace("%3A", ":").Replace("%40", "@")
-            .Replace("%26", "&").Replace("%3D", "=").Replace("%2B", "+")
-            .Replace("%24", "$").Replace("%2C", ",").Replace("%23", "#");
-        // C# uses uppercase hex codes, JavaScript uses lowercase.
+            var c = text[i];
+            if (IsUnescaped(c))
+            {
+                sb.Append(c);
+                continue;
+            }
 
-        return HEXCODE.Replace(sb.ToString(), s => s.Value.ToLower());
+            int scalar;
+            if (char.IsHighSurrogate(c) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
+            {
+                scalar = char.ConvertToUtf32(c, text[i + 1]);
+                i++;
+            }
+            else
+            {
+                scalar = char.IsSurrogate(c) ? 0xFFFD : c;
+            }
+
+            if (scalar < 0x80)
+            {
+                AppendEscaped(sb, scalar);
+            }
+            else if (scalar < 0x800)
+            {
+                AppendEscaped(sb, 0xC0 | (scalar >> 6));
+                AppendEscaped(sb, 0x80 | (scalar & 0x3F));
+            }
+            else if (scalar < 0x10000)
+            {
+                AppendEscaped(sb, 0xE0 | (scalar >> 12));
+                AppendEscaped(sb, 0x80 | ((scalar >> 6) & 0x3F));
+                AppendEscaped(sb, 0x80 | (scalar & 0x3F));
+            }
+            else
+            {
+                AppendEscaped(sb, 0xF0 | (scalar >> 18));
+                AppendEscaped(sb, 0x80 | ((scalar >> 12) & 0x3F));
+                AppendEscaped(sb, 0x80 | ((scalar >> 6) & 0x3F));
+                AppendEscaped(sb, 0x80 | (scalar & 0x3F));
+            }
+        }
+        return sb;
+
+        static void AppendEscaped(StringBuilder sb, int b)
+            => sb.Append('%').Append(HexDigits[b >> 4]).Append(HexDigits[b & 0xF]);
     }
+
+    private static bool IsUnescaped(char c) => c switch
+    {
+        >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' => true,
+        '-' or '_' or '.' or '~' or ' ' or '!' or '*' or '\'' or '(' or ')' or ';' or '/' or '?'
+            or ':' or '@' or '&' or '=' or '+' or '$' or ',' or '#' => true,
+        _ => false
+    };
 
     internal static string UrlDecoded(this string str) => Uri.UnescapeDataString(str);
 

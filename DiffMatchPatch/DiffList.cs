@@ -122,16 +122,17 @@ public static class DiffList
     public static string ToDelta(this IEnumerable<Diff> diffs)
     {
         var sb = new StringBuilder();
+        var first = true;
         foreach (var aDiff in diffs)
         {
-            var sign = aDiff.Operation.ToDelta();
-            var textToAppend = aDiff.Operation == Insert
-                ? aDiff.Text.UrlEncoded()
-                : aDiff.TextLength.ToString();
-            if (sb.Length > 0)
+            if (!first)
                 sb.Append('\t');
-            sb.Append(sign);
-            sb.Append(textToAppend);
+            first = false;
+            sb.Append(aDiff.Operation.ToDelta());
+            if (aDiff.Operation == Insert)
+                sb.AppendUrlEncoded(aDiff.TextSpan);
+            else
+                sb.Append(aDiff.TextLength);
         }
         return sb.ToString();
     }
@@ -186,211 +187,15 @@ public static class DiffList
         }
     }
 
-    internal static IEnumerable<Diff> CleanupMergePass1(this IEnumerable<Diff> diffs)
-    {
-        var sbDelete = new StringBuilder();
-        var sbInsert = new StringBuilder();
-        var sbEquality = new StringBuilder();
-
-        var enumerator = diffs.Concat(Diff.Empty).GetEnumerator();
-        while (enumerator.MoveNext())
-        {
-            var diff = enumerator.Current;
-
-            if (diff.Operation == Insert)
-            {
-                sbInsert.Append(diff.TextSpan);
-            }
-            else if (diff.Operation == Delete)
-            {
-                sbDelete.Append(diff.TextSpan);
-            }
-
-            switch (diff.Operation)
-            {
-                case Equal:
-                    // Upon reaching an equality, check for prior redundancies.
-                    if (sbInsert.Length > 0 || sbDelete.Length > 0)
-                    {
-                        // first equality after number of inserts/deletes
-                        // Factor out any common prefixies.
-                        var prefixLength = TextUtil.CommonPrefix(sbInsert, sbDelete);
-                        if (prefixLength > 0)
-                        {
-                            sbEquality.Append(sbInsert.ToString(0, prefixLength));
-                            sbInsert.Remove(0, prefixLength);
-                            sbDelete.Remove(0, prefixLength);
-                        }
-
-                        // Factor out any common suffixies.
-                        var suffixLength = TextUtil.CommonSuffix(sbInsert, sbDelete);
-                        string commonsuffix = string.Empty;
-                        if (suffixLength > 0)
-                        {
-                            commonsuffix = sbInsert.ToString(sbInsert.Length - suffixLength, suffixLength);
-                            sbInsert.Remove(sbInsert.Length - suffixLength, suffixLength);
-                            sbDelete.Remove(sbDelete.Length - suffixLength, suffixLength);
-                        }
-
-                        // Delete the offending records and add the merged ones.
-                        if (sbEquality.Length > 0)
-                        {
-                            yield return Diff.Equal(sbEquality.ToString());
-                        }
-                        if (sbDelete.Length > 0) yield return Diff.Delete(sbDelete.ToString());
-                        if (sbInsert.Length > 0) yield return Diff.Insert(sbInsert.ToString());
-
-                        // Start new equality: suffix + current diff
-                        sbEquality.Clear();
-                        if (commonsuffix.Length > 0)
-                        {
-                            sbEquality.Append(commonsuffix);
-                        }
-                        sbEquality.Append(diff.TextSpan);
-                        sbDelete.Clear();
-                        sbInsert.Clear();
-                    }
-                    else
-                    {
-                        // Merge this equality with the previous one.
-                        sbEquality.Append(diff.TextSpan);
-                    }
-                    break;
-            }
-        }
-        if (sbEquality.Length > 0)
-            yield return Diff.Equal(sbEquality.ToString());
-    }
-
-    internal static IEnumerable<Diff> CleanupMergePass2(this IEnumerable<Diff> input, out bool haschanges)
-    {
-        haschanges = false;
-        // Second pass: look for single edits surrounded on both sides by
-        // equalities which can be shifted sideways to eliminate an equality.
-        // e.g: A<ins>BA</ins>C -> <ins>AB</ins>AC
-        var diffs = input.ToList();
-        // Intentionally ignore the first and last element (don't need checking).
-        for (var i = 1; i < diffs.Count - 1; i++)
-        {
-            var previous = diffs[i - 1];
-            var current = diffs[i];
-            var next = diffs[i + 1];
-            if (previous.Operation == Equal && next.Operation == Equal)
-            {
-                var currentSpan = current.TextSpan;
-                var previousSpan = previous.TextSpan;
-                var nextSpan = next.TextSpan;
-
-                // This is a single edit surrounded by equalities.
-                if (currentSpan.Length >= previousSpan.Length &&
-                    currentSpan[^previousSpan.Length..].SequenceEqual(previousSpan))
-                {
-                    // Shift the edit over the previous equality.
-                    var text = previous.Text + current.Text[..^previous.TextLength];
-                    diffs[i] = current.Replace(text);
-                    diffs[i + 1] = next.Replace(previous.Text + next.Text);
-                    diffs.Splice(i - 1, 1);
-                    haschanges = true;
-                }
-                else if (currentSpan.Length >= nextSpan.Length &&
-                         currentSpan[..nextSpan.Length].SequenceEqual(nextSpan))
-                {
-                    // Shift the edit over the next equality.
-                    diffs[i - 1] = previous.Replace(previous.Text + next.Text);
-                    diffs[i] = current.Replace(current.Text[next.TextLength..] + next.Text);
-                    diffs.Splice(i + 1, 1);
-                    haschanges = true;
-                }
-            }
-        }
-        return diffs;
-    }
-
     /// <summary>
     /// Reorder and merge like edit sections.  Merge equalities.
     /// Any edit section can move as long as it doesn't cross an equality.
     /// </summary>
-    /// <param name="diffs">list of Diffs</param>
-    internal static IEnumerable<Diff> CleanupMerge(this IEnumerable<Diff> diffs)
+    internal static List<Diff> CleanupMerge(this IEnumerable<Diff> diffs)
     {
-        bool changes;
-        do
-        {
-            diffs = diffs
-                .CleanupMergePass1()
-                .CleanupMergePass2(out changes)
-                .ToList(); // required to detect if anything changed
-        } while (changes);
-
-        return diffs;
-    }
-
-
-    readonly record struct EditBetweenEqualities(string Equality1, string Edit, string Equality2)
-    {
-        public int Score => DiffCleanupSemanticScore(Equality1, Edit) + DiffCleanupSemanticScore(Edit, Equality2);
-
-        readonly record struct ScoreHelper(string Str, Index I, Regex Regex)
-        {
-            char C => Str[I];
-            public bool IsEmpty => Str.Length == 0;
-            public bool NonAlphaNumeric => !char.IsLetterOrDigit(C);
-            public bool IsWhitespace => char.IsWhiteSpace(C);
-            public bool IsLineBreak => IsWhitespace && char.IsControl(C);
-            public bool IsBlankLine => IsLineBreak && Regex.IsMatch(Str);
-        }
-
-        /// Given two strings, computes a score representing whether the internal boundary falls on logical boundaries.
-        /// higher is better
-        private static int DiffCleanupSemanticScore(string one, string two)
-            => (h1: new ScoreHelper(one, ^1, BlankLineEnd), h2: new ScoreHelper(two, 0, BlankLineStart)) switch
-            {
-                { h1.IsEmpty: true } or { h2.IsEmpty: true } => 6,
-                { h1.IsBlankLine: true } or { h2.IsBlankLine: true } => 5,
-                { h1.IsLineBreak: true } or { h2.IsLineBreak: true } => 4,
-                { h1.NonAlphaNumeric: true } and { h1.IsWhitespace: false } and { h2.IsWhitespace: true } => 3,
-                { h1.IsWhitespace: true } or { h2.IsWhitespace: true } => 2,
-                { h1.NonAlphaNumeric: true } or { h2.NonAlphaNumeric: true } => 1,
-                _ => 0
-            };
-
-        // Shift the edit as far left as possible.
-        public EditBetweenEqualities ShiftLeft()
-        {
-            var commonOffset = TextUtil.CommonSuffix(Equality1, Edit);
-
-            if (commonOffset > 0)
-            {
-                var commonString = Edit[^commonOffset..];
-                var equality1 = Equality1[..^commonOffset];
-                var edit = commonString + Edit[..^commonOffset];
-                var equality2 = commonString + Equality2;
-                return this with { Equality1 = equality1, Edit = edit, Equality2 = equality2 };
-            }
-            else
-            {
-                return this;
-            }
-        }
-
-        // Shift one right
-        EditBetweenEqualities ShiftRight() => this with { Equality1 = Equality1 + Edit[0], Edit = Edit[1..] + Equality2[0], Equality2 = Equality2[1..] };
-
-        public IEnumerable<EditBetweenEqualities> TraverseRight()
-        {
-            var item = this;
-            while (item.Edit.Length != 0 && item.Equality2.Length != 0 && item.Edit[0] == item.Equality2[0])
-            {
-                yield return item = item.ShiftRight();
-            }
-        }
-
-        public IEnumerable<Diff> ToDiffs(Operation edit)
-        {
-            yield return Diff.Equal(Equality1);
-            yield return Diff.Create(edit, Edit);
-            yield return Diff.Equal(Equality2);
-        }
+        using var engine = DiffEngine.FromDiffs(diffs);
+        engine.CleanupMerge();
+        return engine.ToList();
     }
 
     /// <summary>
@@ -398,168 +203,22 @@ public static class DiffList
     /// which can be shifted sideways to align the edit to a word boundary.
     /// e.g: The c<ins>at c</ins>ame. -> The <ins>cat </ins>came.
     /// </summary>
-    /// <param name="diffs"></param>
-    internal static IEnumerable<Diff> CleanupSemanticLossless(this IEnumerable<Diff> input)
+    internal static List<Diff> CleanupSemanticLossless(this IEnumerable<Diff> diffs)
     {
-        var diffs = input.ToList();
-        // Intentionally ignore the first and last element (don't need checking).
-        var pointer = 1;
-        while (pointer < diffs.Count - 1)
-        {
-            var previous = diffs[pointer - 1];
-            var current = diffs[pointer];
-            var next = diffs[pointer + 1];
-            if (previous.Operation == Equal && next.Operation == Equal)
-            {
-                // This is a single edit surrounded by equalities.
-                // First, shift the edit as far left as possible.
-                var item = new EditBetweenEqualities(previous.Text, current.Text, next.Text).ShiftLeft();
-
-                // Second, step character by character right, looking for the best fit.
-                // The >= encourages trailing rather than leading whitespace on edits.
-                var best = item;
-                var bestScore = item.Score;
-                foreach (var candidate in item.TraverseRight())
-                {
-                    var score = candidate.Score;
-                    if (score >= bestScore)
-                    {
-                        best = candidate;
-                        bestScore = score;
-                    }
-                }
-
-                if (!previous.TextSpan.SequenceEqual(best.Equality1.AsSpan()))
-                {
-                    // We have an improvement, save it back to the diff.
-                    if (best.Equality1.Length != 0)
-                    {
-                        diffs[pointer - 1] = previous.Replace(best.Equality1);
-                    }
-                    else
-                    {
-                        diffs.RemoveAt(pointer - 1);
-                        pointer--;
-                    }
-                    diffs[pointer] = current.Replace(best.Edit);
-                    if (best.Equality2.Length != 0)
-                    {
-                        diffs[pointer + 1] = next.Replace(best.Equality2);
-                    }
-                    else
-                    {
-                        diffs.RemoveAt(pointer + 1);
-                        pointer--;
-                    }
-                }
-            }
-            pointer++;
-        }
-        return diffs;
+        using var engine = DiffEngine.FromDiffs(diffs);
+        engine.CleanupSemanticLossless();
+        return engine.ToList();
     }
-
-    // Define some regex patterns for matching boundaries.
-    private static readonly Regex BlankLineEnd = new("\\n\\r?\\n\\Z", RegexOptions.Compiled);
-    private static readonly Regex BlankLineStart = new("\\A\\r?\\n\\r?\\n", RegexOptions.Compiled);
 
     /// <summary>
     /// Reduce the number of edits by eliminating operationally trivial equalities.
     /// </summary>
-    /// <param name="diffs"></param>
-    /// <param name="diffEditCost"></param>
     internal static IEnumerable<Diff> CleanupEfficiency(this IEnumerable<Diff> input, short diffEditCost = 4)
     {
-        var diffs = input.ToList();
-        var changes = false;
-        // Stack of indices where equalities are found.
-        var equalities = new Stack<int>();
-        // Always equal to equalities[equalitiesLength-1][1]
-        var lastEquality = string.Empty;
-        // Is there an insertion operation before the last equality.
-        var insertionBeforeLastEquality = false;
-        // Is there a deletion operation before the last equality.
-        var deletionBeforeLastEquality = false;
-        // Is there an insertion operation after the last equality.
-        var insertionAfterLastEquality = false;
-        // Is there a deletion operation after the last equality.
-        var deletionAfterLastEquality = false;
-
-        for (var i = 0; i < diffs.Count; i++)
-        {
-            var diff = diffs[i];
-            if (diff.Operation == Equal)
-            {  // Equality found.
-                if (diff.TextLength < diffEditCost && (insertionAfterLastEquality || deletionAfterLastEquality))
-                {
-                    // Candidate found.
-                    equalities.Push(i);
-                    (insertionBeforeLastEquality, deletionBeforeLastEquality) = (insertionAfterLastEquality, deletionAfterLastEquality);
-                    lastEquality = diff.Text;
-                }
-                else
-                {
-                    // Not a candidate, and can never become one.
-                    equalities.Clear();
-                    lastEquality = string.Empty;
-                }
-                insertionAfterLastEquality = deletionAfterLastEquality = false;
-            }
-            else
-            {  // An insertion or deletion.
-                if (diff.Operation == Delete)
-                {
-                    deletionAfterLastEquality = true;
-                }
-                else
-                {
-                    insertionAfterLastEquality = true;
-                }
-                /*
-                 * Five types to be split:
-                 * <ins>A</ins><del>B</del>XY<ins>C</ins><del>D</del>
-                 * <ins>A</ins>X<ins>C</ins><del>D</del>
-                 * <ins>A</ins><del>B</del>X<ins>C</ins>
-                 * <ins>A</del>X<ins>C</ins><del>D</del>
-                 * <ins>A</ins><del>B</del>X<del>C</del>
-                 */
-                if ((lastEquality.Length != 0)
-                    && ((insertionBeforeLastEquality && deletionBeforeLastEquality && insertionAfterLastEquality && deletionAfterLastEquality)
-                        || ((lastEquality.Length < diffEditCost / 2)
-                            && (insertionBeforeLastEquality ? 1 : 0) + (deletionBeforeLastEquality ? 1 : 0) + (insertionAfterLastEquality ? 1 : 0)
-                            + (deletionAfterLastEquality ? 1 : 0) == 3)))
-                {
-                    // replace equality by delete/insert
-                    diffs.Splice(equalities.Peek(), 1, Diff.Delete(lastEquality), Diff.Insert(lastEquality));
-                    equalities.Pop();  // Throw away the equality we just deleted.
-                    lastEquality = string.Empty;
-                    if (insertionBeforeLastEquality && deletionBeforeLastEquality)
-                    {
-                        // No changes made which could affect previous entry, keep going.
-                        insertionAfterLastEquality = deletionAfterLastEquality = true;
-                        equalities.Clear();
-                    }
-                    else
-                    {
-                        if (equalities.Count > 0)
-                        {
-                            equalities.Pop();
-                        }
-
-                        i = equalities.Count > 0 ? equalities.Peek() : -1;
-                        insertionAfterLastEquality = deletionAfterLastEquality = false;
-                    }
-                    changes = true;
-                }
-            }
-        }
-
-        if (changes)
-        {
-            return diffs.CleanupMerge();
-        }
-
-        return input;
+        using var engine = DiffEngine.FromDiffs(input);
+        return engine.CleanupEfficiency(diffEditCost) ? engine.ToList() : input;
     }
+
     /// <summary>
     /// A diff of two unrelated texts can be filled with coincidental matches. 
     /// For example, the diff of "mouse" and "sofas" is 
@@ -570,7 +229,12 @@ public static class DiffList
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public static IImmutableList<Diff> MakeHumanReadable(this IEnumerable<Diff> input) => input.CleanupSemantic().ToImmutableList();
+    public static IImmutableList<Diff> MakeHumanReadable(this IEnumerable<Diff> input)
+    {
+        using var engine = DiffEngine.FromDiffs(input);
+        engine.CleanupSemantic();
+        return engine.ToImmutableArray();
+    }
     /// <summary>
     /// This function is similar to `OptimizeForReadability`, except that instead of optimising a diff 
     /// to be human-readable, it optimises the diff to be efficient for machine processing. The results 
@@ -584,132 +248,22 @@ public static class DiffList
     /// The default value is 4, which means if expanding the length of a diff by three characters can eliminate one edit, 
     /// then that optimisation will reduce the total costs</param>
     /// <returns></returns>
-    public static IImmutableList<Diff> OptimizeForMachineProcessing(this IEnumerable<Diff> input, short diffEditCost = 4) => input.CleanupEfficiency(diffEditCost).ToImmutableList();
+    public static IImmutableList<Diff> OptimizeForMachineProcessing(this IEnumerable<Diff> input, short diffEditCost = 4)
+    {
+        using var engine = DiffEngine.FromDiffs(input);
+        engine.CleanupEfficiency(diffEditCost);
+        return engine.ToImmutableArray();
+    }
 
     /// <summary>
     /// Reduce the number of edits by eliminating semantically trivial equalities.
     /// </summary>
-    /// <param name="diffs"></param>
     internal static List<Diff> CleanupSemantic(this IEnumerable<Diff> input)
     {
-        var diffs = input.ToList();
-        // Stack of indices where equalities are found.
-        var equalities = new Stack<int>();
-        // Length of the last equality (avoids materializing .Text just for length checks)
-        int lastEqualityLength = -1; // -1 = no equality seen yet (equivalent to null)
-        var pointer = 0;  // Index of current position.
-                          // Number of characters that changed prior to the equality.
-        var lengthInsertions1 = 0;
-        var lengthDeletions1 = 0;
-        // Number of characters that changed after the equality.
-        var lengthInsertions2 = 0;
-        var lengthDeletions2 = 0;
-        while (pointer < diffs.Count)
-        {
-            if (diffs[pointer].Operation == Equal)
-            {  // Equality found.
-                equalities.Push(pointer);
-                lengthInsertions1 = lengthInsertions2;
-                lengthDeletions1 = lengthDeletions2;
-                lengthInsertions2 = 0;
-                lengthDeletions2 = 0;
-                lastEqualityLength = diffs[pointer].TextLength;
-            }
-            else
-            {  // an insertion or deletion
-                if (diffs[pointer].Operation == Insert)
-                {
-                    lengthInsertions2 += diffs[pointer].TextLength;
-                }
-                else
-                {
-                    lengthDeletions2 += diffs[pointer].TextLength;
-                }
-                // Eliminate an equality that is smaller or equal to the edits on both
-                // sides of it.
-                if (lastEqualityLength >= 0
-                    && (lastEqualityLength <= Math.Max(lengthInsertions1, lengthDeletions1))
-                    && (lastEqualityLength <= Math.Max(lengthInsertions2, lengthDeletions2)))
-                {
-                    // Duplicate record - materialize text only when we actually splice.
-                    var lastEquality = diffs[equalities.Peek()].Text;
-
-                    diffs.Splice(equalities.Peek(), 1, Diff.Delete(lastEquality), Diff.Insert(lastEquality));
-
-                    // Throw away the equality we just deleted.
-                    equalities.Pop();
-                    if (equalities.Count > 0)
-                    {
-                        equalities.Pop();
-                    }
-                    pointer = equalities.Count > 0 ? equalities.Peek() : -1;
-                    lengthInsertions1 = 0;  // Reset the counters.
-                    lengthDeletions1 = 0;
-                    lengthInsertions2 = 0;
-                    lengthDeletions2 = 0;
-                    lastEqualityLength = -1;
-                }
-            }
-            pointer++;
-        }
-
-        diffs = diffs.CleanupMerge().CleanupSemanticLossless().ToList();
-
-        // Find any overlaps between deletions and insertions.
-        // e.g: <del>abcxxx</del><ins>xxxdef</ins>
-        //   -> <del>abc</del>xxx<ins>def</ins>
-        // e.g: <del>xxxabc</del><ins>defxxx</ins>
-        //   -> <ins>def</ins>xxx<del>abc</del>
-        // Only extract an overlap if it is as big as the edit ahead or behind it.
-        pointer = 1;
-        while (pointer < diffs.Count)
-        {
-            if (diffs[pointer - 1].Operation == Delete &&
-                diffs[pointer].Operation == Insert)
-            {
-                var deletion = diffs[pointer - 1].TextSpan;
-                var insertion = diffs[pointer].TextSpan;
-                var overlapLength1 = TextUtil.CommonOverlap(deletion, insertion);
-                var overlapLength2 = TextUtil.CommonOverlap(insertion, deletion);
-                var minLength = Math.Min(deletion.Length, insertion.Length);
-
-                Diff[]? newdiffs = null;
-                if ((overlapLength1 >= overlapLength2) && (overlapLength1 >= minLength / 2.0))
-                {
-                    // Overlap found.
-                    // Insert an equality and trim the surrounding edits.
-                    newdiffs = new[]
-                    {
-                            Diff.Delete(deletion.Slice(0, deletion.Length - overlapLength1)),
-                            Diff.Equal(insertion.Slice(0, overlapLength1)),
-                            Diff.Insert(insertion[overlapLength1..])
-                        };
-                }
-                else if ((overlapLength2 >= overlapLength1) && overlapLength2 >= minLength / 2.0)
-                {
-                    // Reverse overlap found.
-                    // Insert an equality and swap and trim the surrounding edits.
-                    newdiffs = new[]
-                    {
-                                Diff.Insert(insertion.Slice(0, insertion.Length - overlapLength2)),
-                                Diff.Equal(deletion.Slice(0, overlapLength2)),
-                                Diff.Delete(deletion[overlapLength2..])
-                        };
-                }
-
-                if (newdiffs != null)
-                {
-                    diffs.Splice(pointer - 1, 2, newdiffs);
-                    pointer++;
-                }
-
-                pointer++;
-            }
-            pointer++;
-        }
-        return diffs;
+        using var engine = DiffEngine.FromDiffs(input);
+        engine.CleanupSemantic();
+        return engine.ToList();
     }
-
 
     /// <summary>
     /// Rehydrate the text in a diff from a string of line hashes to real lines of text.

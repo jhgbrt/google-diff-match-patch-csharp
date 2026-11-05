@@ -41,20 +41,9 @@ internal readonly struct StringSlice : IEquatable<StringSlice>
     /// <summary>Equivalent to span[start..].</summary>
     public StringSlice Slice(int start) => new(Source, Offset + start, Length - start);
 
-    /// <summary>Equivalent to span[..^count] (trim from end).</summary>
-    public StringSlice TrimEnd(int count) => new(Source, Offset, Length - count);
-
-    /// <summary>Equivalent to span[^count..] (take from end).</summary>
-    public StringSlice TakeLast(int count) => new(Source, Offset + Length - count, count);
-
-    public int IndexOf(ReadOnlySpan<char> value, StringComparison comparison)
-        => Span.IndexOf(value, comparison);
-
     public override string ToString() => Length == 0 ? string.Empty : Source.Substring(Offset, Length);
 
     /// <summary>Implicit conversion from string to StringSlice (wraps the entire string).</summary>
     public static implicit operator StringSlice(string source) => new(source);
 
-    /// <summary>Create a Diff with the text of this slice.</summary>
-    public Diff ToDiff(Operation operation) => Diff.Create(operation, ToString());
 }
